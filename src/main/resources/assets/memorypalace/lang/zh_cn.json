@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "笔记不存在",
 	"error.memorypalace.rename_slash": "新名称中不能包含斜杠（重命名不会移动文件夹）",
 	"error.memorypalace.rename_taken": "此文件夹中已存在同名笔记",
-	"error.memorypalace.not_found": "找不到此笔记或文件夹"
+	"error.memorypalace.not_found": "找不到此笔记或文件夹",
+	"screen.memorypalace.math_error.empty": "公式为空",
+	"screen.memorypalace.math_error.too_long": "公式超过 %s 个字符",
+	"screen.memorypalace.math_error.too_big": "公式太大，无法绘制（%s 像素）",
+	"screen.memorypalace.math_error.missing_argument": "缺少第 %s 个参数 {…}",
+	"screen.memorypalace.math_error.unknown_command": "未知命令 %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "宏 %s 不断展开为自身",
+	"screen.memorypalace.math_error.macro_too_long": "宏展开后超过 %s 个字符",
+	"screen.memorypalace.math_error.bad_definition": "无法读取的定义，请写成 \\newcommand{\\名称}{内容}",
+	"command.memorypalace.exported": "已将「%s」导出为成书（%s 页），没装模组的玩家也能阅读",
+	"command.memorypalace.export_truncated": "笔记太长，一本成书放不下；书在第 %s 页截止",
+	"command.memorypalace.export_encrypted": "加密笔记无法导出：服务端读不到内容"
 }

@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "노트가 없습니다",
 	"error.memorypalace.rename_slash": "새 이름에는 슬래시를 사용할 수 없습니다(이름 변경으로 노트를 다른 폴더로 이동할 수 없음)",
 	"error.memorypalace.rename_taken": "이 폴더에 같은 이름의 노트가 이미 있습니다",
-	"error.memorypalace.not_found": "노트 또는 폴더를 찾을 수 없습니다"
+	"error.memorypalace.not_found": "노트 또는 폴더를 찾을 수 없습니다",
+	"screen.memorypalace.math_error.empty": "수식이 비어 있습니다",
+	"screen.memorypalace.math_error.too_long": "수식이 %s자를 넘습니다",
+	"screen.memorypalace.math_error.too_big": "수식이 너무 커서 그릴 수 없습니다 (%s 픽셀)",
+	"screen.memorypalace.math_error.missing_argument": "%s번째 인수 {…}가 없습니다",
+	"screen.memorypalace.math_error.unknown_command": "알 수 없는 명령 %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "매크로 %s가 계속 자기 자신으로 전개됩니다",
+	"screen.memorypalace.math_error.macro_too_long": "매크로를 전개하면 %s자를 넘습니다",
+	"screen.memorypalace.math_error.bad_definition": "정의를 읽을 수 없습니다. \\newcommand{\\이름}{내용} 형식으로 쓰세요",
+	"command.memorypalace.exported": "\"%s\"을(를) 완성된 책으로 내보냈습니다 (%s쪽). 모드가 없어도 읽을 수 있습니다",
+	"command.memorypalace.export_truncated": "노트가 너무 길어 책 한 권에 담기지 않습니다. %s쪽에서 끝납니다",
+	"command.memorypalace.export_encrypted": "암호화된 노트는 내보낼 수 없습니다: 서버가 내용을 읽을 수 없습니다"
 }

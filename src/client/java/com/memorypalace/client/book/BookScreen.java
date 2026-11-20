@@ -11,7 +11,9 @@ import com.memorypalace.client.render.NoteImageStore;
 import com.memorypalace.client.render.RasterTextures;
 import com.memorypalace.core.markdown.MarkdownParser;
 import com.memorypalace.core.markdown.MdBlock;
+import com.memorypalace.core.render.MathProblem;
 import com.memorypalace.core.render.MathRenderer;
+import com.memorypalace.core.render.TexMacros;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.BookViewScreen;
@@ -48,8 +50,8 @@ public abstract class BookScreen extends Screen {
 	private static final int TEXT_BOTTOM_MARGIN = 24;
 	protected static final int INDICATOR_Y = BookViewScreen.PAGE_INDICATOR_TEXT_Y_OFFSET - V_TOP;
 
-	// 渲染失败过的公式（只在渲染线程用）
-	private static final java.util.Set<String> FAILED_MATH = new java.util.HashSet<>();
+	// 渲染失败过的公式和失败原因（只在渲染线程用）
+	private static final java.util.Map<String, MathProblem> FAILED_MATH = new java.util.HashMap<>();
 
 	/** 上锁时调用：这里存着公式原文。 */
 	public static void clearMathFailures() {
@@ -191,18 +193,31 @@ public abstract class BookScreen extends Screen {
 	/** 同上，正文后面再接几段（比如阅读界面末尾的"链接到本篇的笔记"）。 */
 	protected List<List<BookLine>> layout(String body, List<MdBlock> after) {
 		MarkdownParser.imageLabel = net.minecraft.client.resources.language.I18n.get("screen.memorypalace.image_label");
-		List<MdBlock> blocks = MarkdownParser.parse(body);
+		// \newcommand definitions anywhere in the note apply to all of its formulas (and only to this note)
+		TexMacros.Collected collected = TexMacros.collect(MarkdownParser.parse(body));
+		List<MdBlock> blocks = collected.blocks();
 		if (!after.isEmpty()) {
 			blocks = new java.util.ArrayList<>(blocks);
 			blocks.addAll(after);
 		}
 		return BookLayout.paginate(this.font, blocks,
-				(int) (textWidth() / fontScale), (int) (textHeight() / fontScale), new ScreenBoxes());
+				(int) (textWidth() / fontScale), (int) (textHeight() / fontScale), new ScreenBoxes(collected.macros()));
 	}
 
 	/** 这个链接是不是断链（对应不上笔记）；默认都不是，阅读界面按服务端的结果覆盖。 */
 	protected boolean brokenLink(String link) {
 		return false;
+	}
+
+	/** Whether a broken formula also shows why it failed (the editor preview does; the reader stays clean). */
+	protected boolean showMathErrors() {
+		return false;
+	}
+
+	/** A translated one-line explanation of a formula problem, e.g. "Unknown command \lam". */
+	public static String describe(MathProblem problem) {
+		String key = "screen.memorypalace.math_error." + problem.kind().name().toLowerCase(java.util.Locale.ROOT);
+		return Component.translatable(key, problem.detail()).getString();
 	}
 
 	/** 图片到了要重新排版：子类在这里重新调用 layout。 */
@@ -239,6 +254,12 @@ public abstract class BookScreen extends Screen {
 
 	/** 给排版器提供公式和图片的贴图。 */
 	private final class ScreenBoxes implements BookLayout.Boxes {
+		private final TexMacros macros;
+
+		ScreenBoxes(TexMacros macros) {
+			this.macros = macros;
+		}
+
 		@Override
 		public boolean brokenLink(String link) {
 			return BookScreen.this.brokenLink(link);
@@ -249,12 +270,19 @@ public abstract class BookScreen extends Screen {
 
 		@Override
 		public BookLayout.Box math(String tex, boolean display) {
+			// Expand the note's macros first: textures and failures are keyed by the expanded formula, so editing a
+			// \newcommand re-renders every formula that uses it instead of showing a stale picture
+			TexMacros.Expansion expansion = macros.expand(tex);
+			if (!expansion.ok()) {
+				return null;
+			}
+			tex = expansion.tex();
 			float px = pxPerUnit();
-			String key = "math|" + display + "|" + px + "|" + tex;
+			String key = key(tex, display, px);
 			RasterTextures.Tex t = RasterTextures.get(key);
 			if (t == null) {
 				// 写错的公式也记住，编辑器实时预览时不用每帧重新试一遍（打到一半的 \lam 之类）
-				if (FAILED_MATH.contains(key)) {
+				if (FAILED_MATH.containsKey(key)) {
 					return null;
 				}
 				var result = MathRenderer.render(tex, display, MATH_SIZE * px, BookLayout.MATH);
@@ -262,7 +290,8 @@ public abstract class BookScreen extends Screen {
 					if (FAILED_MATH.size() > 1024) {
 						FAILED_MATH.clear();
 					}
-					FAILED_MATH.add(key);
+					FAILED_MATH.put(key, result.problem() == null
+							? new MathProblem(MathProblem.Kind.SYNTAX, result.error()) : result.problem());
 					return null;
 				}
 				t = RasterTextures.put(key, result.raster(), result.depth());
@@ -271,6 +300,21 @@ public abstract class BookScreen extends Screen {
 				}
 			}
 			return new BookLayout.Box(t.id(), t.rasterW(), t.rasterH(), t.depth(), px);
+		}
+
+		private static String key(String expandedTex, boolean display, float px) {
+			return "math|" + display + "|" + px + "|" + expandedTex;
+		}
+
+		@Override
+		public String mathError(String tex, boolean display) {
+			if (!showMathErrors()) {
+				return null;
+			}
+			TexMacros.Expansion expansion = macros.expand(tex);
+			MathProblem problem = expansion.ok()
+					? FAILED_MATH.get(key(expansion.tex(), display, pxPerUnit())) : expansion.problem();
+			return problem == null ? null : describe(problem);
 		}
 
 		@Override

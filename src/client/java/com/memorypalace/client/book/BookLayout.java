@@ -39,6 +39,10 @@ public final class BookLayout {
 		return insertion != null && insertion.startsWith(LINK_PREFIX) ? insertion.substring(LINK_PREFIX.length()) : null;
 	}
 	static final int ERROR = 0xFFA02020;
+	// The explanation under a broken formula in the editor preview: same red, smaller weight (italic, not bold)
+	private static final String ERROR_MARK = "⚠ ";
+	private static final Style ERROR_NOTE = Style.EMPTY.withColor(ERROR).withItalic(true).withBold(false)
+			.withUnderlined(false);
 
 	private static final int INDENT = 8;
 	private static final int BLOCK_GAP = 4;
@@ -69,6 +73,14 @@ public final class BookLayout {
 		/** 这个链接对应不上笔记（断链），换个颜色显示。 */
 		default boolean brokenLink(String link) {
 			return false;
+		}
+
+		/**
+		 * Why math(tex, display) returned null, as a translated one-liner; null when the reason should not be shown
+		 * (only the editor preview shows it) or is unknown.
+		 */
+		default String mathError(String tex, boolean display) {
+			return null;
 		}
 	}
 
@@ -155,6 +167,10 @@ public final class BookLayout {
 				Box box = boxes.math(m.tex(), true);
 				if (box == null) {
 					flow(Kind.TEXT, 0, List.of(new TextPiece("$$" + m.tex() + "$$", Style.EMPTY.withColor(ERROR))), null, 0);
+					String error = boxes.mathError(m.tex(), true);
+					if (error != null) {
+						flow(Kind.TEXT, 0, List.of(new TextPiece(ERROR_MARK + error, ERROR_NOTE)), null, 0);
+					}
 				} else {
 					centeredBox(box, false);
 				}
@@ -342,6 +358,10 @@ public final class BookLayout {
 					out.add(new BoxPiece(box));
 				} else {
 					out.add(new TextPiece("$" + span.text() + "$", base.withColor(ERROR)));
+					String error = boxes.mathError(span.text(), false);
+					if (error != null) {
+						out.add(new TextPiece(" " + ERROR_MARK + error + " ", ERROR_NOTE));
+					}
 				}
 				continue;
 			}

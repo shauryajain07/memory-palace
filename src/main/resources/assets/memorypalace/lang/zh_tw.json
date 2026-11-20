@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "筆記不存在",
 	"error.memorypalace.rename_slash": "新名稱不可包含斜線（重新命名不會將筆記移至其他資料夾）",
 	"error.memorypalace.rename_taken": "此資料夾已有同名筆記",
-	"error.memorypalace.not_found": "找不到筆記或資料夾"
+	"error.memorypalace.not_found": "找不到筆記或資料夾",
+	"screen.memorypalace.math_error.empty": "公式為空",
+	"screen.memorypalace.math_error.too_long": "公式超過 %s 個字元",
+	"screen.memorypalace.math_error.too_big": "公式太大，無法繪製（%s 像素）",
+	"screen.memorypalace.math_error.missing_argument": "缺少第 %s 個參數 {…}",
+	"screen.memorypalace.math_error.unknown_command": "未知指令 %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "巨集 %s 不斷展開為自身",
+	"screen.memorypalace.math_error.macro_too_long": "巨集展開後超過 %s 個字元",
+	"screen.memorypalace.math_error.bad_definition": "無法讀取的定義，請寫成 \\newcommand{\\名稱}{內容}",
+	"command.memorypalace.exported": "已將「%s」匯出為成書（%s 頁），沒裝模組的玩家也能閱讀",
+	"command.memorypalace.export_truncated": "筆記太長，一本成書放不下；書在第 %s 頁截止",
+	"command.memorypalace.export_encrypted": "加密筆記無法匯出：伺服器讀不到內容"
 }

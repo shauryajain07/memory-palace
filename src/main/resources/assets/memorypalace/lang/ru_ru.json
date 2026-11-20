@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "Заметка не существует",
 	"error.memorypalace.rename_slash": "Новое имя не может содержать косую черту (переименование не перемещает заметку между папками)",
 	"error.memorypalace.rename_taken": "В этой папке уже есть заметка с таким именем",
-	"error.memorypalace.not_found": "Заметка или папка не найдена"
+	"error.memorypalace.not_found": "Заметка или папка не найдена",
+	"screen.memorypalace.math_error.empty": "Пустая формула",
+	"screen.memorypalace.math_error.too_long": "Формула длиннее %s символов",
+	"screen.memorypalace.math_error.too_big": "Формула слишком велика для отрисовки (%s пикселей)",
+	"screen.memorypalace.math_error.missing_argument": "Нет аргумента %s в {…}",
+	"screen.memorypalace.math_error.unknown_command": "Неизвестная команда %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "Макрос %s бесконечно раскрывается сам в себя",
+	"screen.memorypalace.math_error.macro_too_long": "После раскрытия макросов больше %s символов",
+	"screen.memorypalace.math_error.bad_definition": "Не удалось прочитать определение, пишите \\newcommand{\\имя}{тело}",
+	"command.memorypalace.exported": "Заметка «%s» экспортирована в написанную книгу (%s стр.). Её можно читать и без мода",
+	"command.memorypalace.export_truncated": "Заметка слишком длинная для одной книги; книга обрывается на %s странице",
+	"command.memorypalace.export_encrypted": "Зашифрованные заметки нельзя экспортировать: сервер не может их прочитать"
 }

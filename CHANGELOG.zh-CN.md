@@ -2,6 +2,19 @@
 
 [English](CHANGELOG.md)
 
+## 未发布
+
+**新功能：LaTeX 更好写**
+
+- **快捷模板**：在编辑器里输入 `\frac`、`\sum`、`\sqrt`、`\pmat`、`\cases` 等命令后按 `Tab`，插入模板并把光标放进去；再按 `Tab` 跳到下一个空的 `{}`。笔记自己定义的同名宏不受影响。
+- **每篇笔记自己的宏**：在任意公式里写 `\newcommand`、`\renewcommand`、`\providecommand`（支持参数和第一个参数的默认值）和 `\DeclareMathOperator`，对这篇笔记的所有公式生效。只有定义的公式不显示。
+- **公式报错说明**：编辑器预览会写出公式画不出来的原因，例如"未知命令 \lam""缺少第 2 个参数"。
+- **`/palace export <笔记>`**：领一本写着笔记内容的普通成书，没装模组的玩家也能读。LaTeX 转成 Unicode（`x²`、`∫₀¹`、`½`、`ℝⁿ`），Markdown 转成简单格式，最多 100 页。加密笔记不能导出。
+
+**修复**
+
+- 一篇笔记里的 `\newcommand` 不再影响其他笔记。JLaTeXMath 把宏存在全游戏共用的表里，以前一篇笔记定义的宏在所有笔记里都能用，结果还取决于先打开哪一篇。现在宏按笔记处理，不再交给 JLaTeXMath。
+
 ## 1.0.1
 
 适用于 Minecraft Java 版 26.3 + Fabric Loader 0.20.1+ + Fabric API。

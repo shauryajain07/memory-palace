@@ -8,7 +8,10 @@ import com.memorypalace.client.crypto.ClientKeys;
 import com.memorypalace.client.crypto.NoteSaver;
 import com.memorypalace.client.crypto.NoteSealers;
 import com.memorypalace.core.crypto.WrongKeyException;
+import com.memorypalace.core.editor.TexSnippets;
 import com.memorypalace.core.editor.UndoHistory;
+import com.memorypalace.core.markdown.MarkdownParser;
+import com.memorypalace.core.render.TexMacros;
 import com.memorypalace.core.vault.Vault;
 import com.memorypalace.mc.EditPayloads;
 import com.memorypalace.mc.LinkPayloads;
@@ -27,6 +30,8 @@ import net.minecraft.network.chat.Component;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -109,6 +114,12 @@ public class EditorScreen extends BookScreen {
 
 	private boolean dirty() {
 		return !text.equals(savedBody);
+	}
+
+	// The live preview explains broken formulas ("⚠ Unknown command \lam") while you type
+	@Override
+	protected boolean showMathErrors() {
+		return true;
 	}
 
 	@Override
@@ -425,6 +436,34 @@ public class EditorScreen extends BookScreen {
 		closeCompletion();
 	}
 
+	// ---- LaTeX snippets (Tab) ----
+
+	/** Applies TexSnippets at the cursor; false when Tab has nothing to do here (then it keeps its normal meaning). */
+	private boolean applySnippet() {
+		MultilineTextField field = textField();
+		if (field == null) {
+			return false;
+		}
+		int cursor = Math.clamp(field.cursor(), 0, text.length());
+		// macros the note defines itself win over snippets with the same name
+		Set<String> ownMacros = TexMacros.collect(MarkdownParser.parse(text)).macros().definitions().keySet();
+		Optional<TexSnippets.Edit> edit = TexSnippets.apply(text, cursor, ownMacros);
+		if (edit.isEmpty() || edit.get().text().length() > OpenNotePayload.MAX_BODY) {
+			return false;
+		}
+		if (!edit.get().text().equals(text)) {
+			history.breakMerge();
+			editBox.setValue(edit.get().text(), true);
+			history.breakMerge();
+		}
+		try {
+			field.seekCursor(Whence.ABSOLUTE, Math.clamp(edit.get().cursor(), 0, text.length()));
+		} catch (RuntimeException e) {
+			// 挪不了光标就留在原处
+		}
+		return true;
+	}
+
 	/** 右页上方的候选框：每行"填进去的名字  路径"，选中的一行加底色。 */
 	private void drawCompletion(GuiGraphicsExtractor graphics) {
 		if (!completing()) {
@@ -475,6 +514,11 @@ public class EditorScreen extends BookScreen {
 				default -> {
 				}
 			}
+		}
+		// Tab: expand a LaTeX snippet (\frac → \frac{}{}) or jump into the next empty {}; otherwise Tab works as usual
+		if (event.key() == InputConstants.KEY_TAB && !event.hasShiftDown() && !event.hasControlDownWithQuirk()
+				&& editBox != null && editBox.isFocused() && applySnippet()) {
+			return true;
 		}
 		// 移动光标、改选区（方向键、Home/End、翻页、Ctrl+A）之后的修改另算一步，不和之前的打字合并
 		switch (event.key()) {

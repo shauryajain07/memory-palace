@@ -33,8 +33,9 @@ Inspired by [ins@aamanda.li](https://www.instagram.com/aamanda.li)'s [meme reel]
 - **A reader styled like vanilla books**: two facing pages, with independently adjustable page and font sizes.
 - **Markdown**: headings, lists, task lists, block quotes, code blocks, tables, links, and local images (`![description](image.png)` and Obsidian's `![[image.png]]`).
 - **Links between notes**: supports Obsidian's `[[note name]]`, `[[folder/note name|display text]]`, and `[[note name#heading]]`, as well as `[text](folder/note.md)`. Click a link on the page to open the corresponding note. Lookup follows Obsidian's rules, preferring a note in the same folder when names match. Web links ask for confirmation before opening in your browser. `/palace backlinks <note>` lists all notes linking to the current note (encrypted note bodies cannot be read by the server and are excluded).
-- **LaTeX**: inline formulas with `$...$` and display formulas with `$$...$$`.
-- **In-game editor**: edit on the left page with a live preview on the right. `Ctrl+S` saves, `Ctrl+Z` undoes, and `Ctrl+Y` (or `Ctrl+Shift+Z`) redoes. A conflict prompt appears if the file has changed externally.
+- **LaTeX**: inline formulas with `$...$` and display formulas with `$$...$$`. Define your own macros with `\newcommand` or `\DeclareMathOperator` anywhere in a note; they apply to every formula in that note (see [Writing LaTeX](#writing-latex)).
+- **In-game editor**: edit on the left page with a live preview on the right. `Ctrl+S` saves, `Ctrl+Z` undoes, and `Ctrl+Y` (or `Ctrl+Shift+Z`) redoes. A conflict prompt appears if the file has changed externally. Type a LaTeX command such as `\frac` and press `Tab` to insert its template; a broken formula shows why it failed right in the preview.
+- **Export to a plain book**: `/palace export <note>` gives you an ordinary written book of the note that anyone can read, even without the mod. Formulas become Unicode (`x²`, `∫`, `½`).
 
 **Memory palace**
 
@@ -82,6 +83,7 @@ Change key bindings under "Options → Controls → Key Binds → Memory Palace"
 | Command | Description |
 |---|---|
 | `/palace give <note or folder>` | Obtain note books; a folder gives a book for each note inside, up to 36 at a time |
+| `/palace export <note>` | Get a plain written book with the note's text, readable without the mod (LaTeX shown as Unicode, up to 100 pages; not for encrypted notes) |
 | `/palace new <path>` | Create a note and edit it in the game |
 | `/palace list [folder]` | List notes |
 | `/palace where <note>` | Find the bookshelves and lecterns holding a note |
@@ -104,6 +106,39 @@ Change key bindings under "Options → Controls → Key Binds → Memory Palace"
 | `/palace reload` | Reload the server configuration file (administrator) |
 
 Note paths in commands can omit `.md` and can contain spaces and Chinese characters. Press `Tab` to complete note paths in commands for obtaining books, finding locations, sharing, and similar operations.
+
+## Writing LaTeX
+
+**Snippets.** In the in-game editor, type one of these commands and press `Tab`. The command becomes a template with the cursor in the first `{}`; press `Tab` again to jump into the next empty `{}` on the same line.
+
+| Type | You get |
+|---|---|
+| `\frac` `\dfrac` `\tfrac` `\binom` | `\frac{│}{}` |
+| `\sqrt` `\nroot` | `\sqrt{│}`, `\sqrt[│]{}` |
+| `\sum` `\prod` `\int` `\oint` `\lim` | `\sum_{│}^{}`, `\lim_{│ \to \infty}` |
+| `\dd` `\pd` | `\frac{\mathrm{d}│}{\mathrm{d}x}`, `\frac{\partial │}{\partial x}` |
+| `\vec` `\hat` `\bar` `\mathbb` `\mathbf` `\text` … | `\vec{│}` |
+| `\lr` `\lrb` `\lrc` `\abs` `\norm` | `\left( │ \right)`, `\left\lVert │ \right\rVert` |
+| `\pmat` `\bmat` `\vmat` `\cases` `\aligned` | matrix, cases and aligned environments |
+
+If your note defines a macro with the same name (for example its own `\norm`), `Tab` leaves it alone.
+
+**Macros.** Put definitions in any formula of a note, usually a display block at the top. They apply to every formula in that note, above and below, and never to other notes:
+
+```markdown
+$$
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\deriv}[2][x]{\frac{\mathrm{d} #2}{\mathrm{d} #1}}
+\DeclareMathOperator{\tr}{tr}
+$$
+
+For $x \in \R^n$: $\norm{x} \ge 0$, $\deriv{f}$, $\deriv[t]{g}$ and $\tr A$.
+```
+
+Supported: `\newcommand`, `\renewcommand`, `\providecommand` (with up to 9 parameters and an optional first parameter) and `\DeclareMathOperator` / `\DeclareMathOperator*`. A formula that only contains definitions is not shown. Obsidian (MathJax) understands the common commands too, but applies a definition only to formulas after it, so if you also read your notes there, keep the definitions at the top.
+
+**Errors.** While editing, a formula that cannot be drawn stays red and the preview says why, for example `⚠ Unknown command \lam` or `⚠ Missing argument 2 in {…}`. The reader shows only the red source.
 
 ## Items and recipes
 

@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "Die Notiz existiert nicht",
 	"error.memorypalace.rename_slash": "Der neue Name darf keinen Schrägstrich enthalten (Umbenennen verschiebt eine Notiz nicht zwischen Ordnern)",
 	"error.memorypalace.rename_taken": "Dieser Ordner enthält bereits eine Notiz mit diesem Namen",
-	"error.memorypalace.not_found": "Die Notiz oder der Ordner wurde nicht gefunden"
+	"error.memorypalace.not_found": "Die Notiz oder der Ordner wurde nicht gefunden",
+	"screen.memorypalace.math_error.empty": "Leere Formel",
+	"screen.memorypalace.math_error.too_long": "Formel ist länger als %s Zeichen",
+	"screen.memorypalace.math_error.too_big": "Formel ist zu groß zum Zeichnen (%s Pixel)",
+	"screen.memorypalace.math_error.missing_argument": "Argument %s in {…} fehlt",
+	"screen.memorypalace.math_error.unknown_command": "Unbekannter Befehl %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "Makro %s expandiert endlos in sich selbst",
+	"screen.memorypalace.math_error.macro_too_long": "Makros expandieren zu mehr als %s Zeichen",
+	"screen.memorypalace.math_error.bad_definition": "Definition nicht lesbar, schreibe \\newcommand{\\name}{inhalt}",
+	"command.memorypalace.exported": "„%s“ als beschriebenes Buch exportiert (%s Seiten). Jeder kann es lesen, auch ohne die Mod",
+	"command.memorypalace.export_truncated": "Die Notiz ist zu lang für ein Buch; das Buch endet nach Seite %s",
+	"command.memorypalace.export_encrypted": "Verschlüsselte Notizen können nicht exportiert werden: Der Server kann sie nicht lesen"
 }

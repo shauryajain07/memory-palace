@@ -1,6 +1,19 @@
 # Changelog
 [简体中文](CHANGELOG.zh-CN.md)
 
+## Unreleased
+
+**New: easier LaTeX**
+
+- **Snippets**: in the editor, type `\frac`, `\sum`, `\sqrt`, `\pmat`, `\cases` and similar commands and press `Tab` to insert a template with the cursor inside; press `Tab` again to jump into the next empty `{}`. Macros the note defines itself are not touched.
+- **Macros per note**: `\newcommand`, `\renewcommand`, `\providecommand` (with parameters and an optional first parameter) and `\DeclareMathOperator` written in any formula apply to every formula of that note. A formula that only contains definitions is hidden.
+- **Formula errors explained**: the editor preview shows why a formula failed, for example "Unknown command \lam" or "Missing argument 2".
+- **`/palace export <note>`**: gives an ordinary written book with the note's text that players without the mod can read. LaTeX is shown as Unicode (`x²`, `∫₀¹`, `½`, `ℝⁿ`), Markdown as simple formatting, up to 100 pages. Encrypted notes are refused.
+
+**Fixes**
+
+- A `\newcommand` in one note no longer leaks into every other note. JLaTeXMath keeps macros in one table for the whole game, so before this a macro from one note worked in all notes, depending on which was opened first. Definitions are now handled per note and never reach JLaTeXMath.
+
 ## 1.0.1
 
 For Minecraft Java Edition 26.3 + Fabric Loader 0.20.1+ + Fabric API.

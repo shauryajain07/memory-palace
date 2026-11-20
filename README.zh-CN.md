@@ -31,8 +31,9 @@ Inspired by [ins@aamanda.li](https://www.instagram.com/aamanda.li)'s [meme reel]
 - **原版书本风格的阅读界面**：左右两页摊开，书页大小和字号可分别调整。
 - **Markdown**：标题、列表、任务清单、引用、代码块、表格、链接、本地图片（`![说明](图.png)` 与 Obsidian 的 `![[图.png]]`）。
 - **笔记之间的链接**：支持 Obsidian 的 `[[笔记名]]`、`[[文件夹/笔记名|显示文字]]`、`[[笔记名#标题]]`，以及 `[文字](文件夹/笔记.md)`。在书页上单击链接即可打开对应的笔记；查找规则与 Obsidian 相同，同名时优先选择同一文件夹中的笔记。单击网址会先请求确认，然后在浏览器中打开。`/palace backlinks <笔记>` 列出链接到这篇笔记的所有笔记（加密笔记的正文无法在服务端读取，因此不计入）。
-- **LaTeX**：行内公式 `$...$`，行间公式 `$$...$$`。
-- **游戏内编辑器**：左页编辑、右页实时预览，`Ctrl+S` 保存，`Ctrl+Z` 撤销，`Ctrl+Y`（或 `Ctrl+Shift+Z`）重做；文件在外部被改过时会提示冲突。
+- **LaTeX**：行内公式 `$...$`，行间公式 `$$...$$`。在笔记任意公式里用 `\newcommand`、`\DeclareMathOperator` 定义自己的宏，整篇笔记的公式都能用（见[书写 LaTeX](#书写-latex)）。
+- **游戏内编辑器**：左页编辑、右页实时预览，`Ctrl+S` 保存，`Ctrl+Z` 撤销，`Ctrl+Y`（或 `Ctrl+Shift+Z`）重做；文件在外部被改过时会提示冲突。输入 `\frac` 等 LaTeX 命令后按 `Tab` 插入模板；写错的公式会在预览里直接说明原因。
+- **导出为普通成书**：`/palace export <笔记>` 领到一本内容就是这篇笔记的原版成书，没装模组的玩家也能读；公式转成 Unicode（`x²`、`∫`、`½`）。
 
 **记忆宫殿**
 - **快速收集**：按 `K` 记下一个想法，写进当天的 `收件箱/yyyy-MM-dd.md`，之后再整理归位。
@@ -78,6 +79,7 @@ Inspired by [ins@aamanda.li](https://www.instagram.com/aamanda.li)'s [meme reel]
 | 命令 | 说明 |
 |---|---|
 | `/palace give <笔记或文件夹>` | 领取笔记书；文件夹会领出里面每一篇（单次最多 36 本） |
+| `/palace export <笔记>` | 领一本写着笔记内容的普通成书，没装模组也能读（公式转成 Unicode，最多 100 页；加密笔记不行） |
 | `/palace new <路径>` | 新建笔记并在游戏内编辑 |
 | `/palace list [文件夹]` | 列出笔记 |
 | `/palace where <笔记>` | 查看笔记所在的书架与讲台 |
@@ -100,6 +102,39 @@ Inspired by [ins@aamanda.li](https://www.instagram.com/aamanda.li)'s [meme reel]
 | `/palace reload` | 重新读取服务端配置文件（管理员） |
 
 命令里的笔记路径可以省略 `.md`，可以含空格和中文；领书、查位置、分享等命令按 `Tab` 可补全笔记路径。
+
+## 书写 LaTeX
+
+**快捷模板。** 在游戏内编辑器里输入下面的命令，再按 `Tab`：命令变成模板，光标停在第一个 `{}` 里；再按 `Tab` 跳到同一行下一个空的 `{}`。
+
+| 输入 | 得到 |
+|---|---|
+| `\frac` `\dfrac` `\tfrac` `\binom` | `\frac{│}{}` |
+| `\sqrt` `\nroot` | `\sqrt{│}`、`\sqrt[│]{}` |
+| `\sum` `\prod` `\int` `\oint` `\lim` | `\sum_{│}^{}`、`\lim_{│ \to \infty}` |
+| `\dd` `\pd` | `\frac{\mathrm{d}│}{\mathrm{d}x}`、`\frac{\partial │}{\partial x}` |
+| `\vec` `\hat` `\bar` `\mathbb` `\mathbf` `\text` … | `\vec{│}` |
+| `\lr` `\lrb` `\lrc` `\abs` `\norm` | `\left( │ \right)`、`\left\lVert │ \right\rVert` |
+| `\pmat` `\bmat` `\vmat` `\cases` `\aligned` | 矩阵、分段函数、对齐环境 |
+
+笔记里自己定义了同名的宏（比如自己的 `\norm`）时，`Tab` 不会改动它。
+
+**宏。** 把定义写在笔记里任意一个公式中（一般放在开头的行间公式里），对这篇笔记里所有公式生效（前面的也算），不会影响别的笔记：
+
+```markdown
+$$
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\deriv}[2][x]{\frac{\mathrm{d} #2}{\mathrm{d} #1}}
+\DeclareMathOperator{\tr}{tr}
+$$
+
+对 $x \in \R^n$：$\norm{x} \ge 0$，$\deriv{f}$，$\deriv[t]{g}$，$\tr A$。
+```
+
+支持 `\newcommand`、`\renewcommand`、`\providecommand`（最多 9 个参数，第一个参数可以有默认值）和 `\DeclareMathOperator` / `\DeclareMathOperator*`。只有定义的公式不显示。Obsidian（MathJax）也认常用的这些命令，但定义只对它后面的公式生效；如果也在 Obsidian 里看笔记，请把定义放在开头。
+
+**报错。** 编辑时，画不出来的公式保持红色，预览里会写出原因，例如 `⚠ 未知命令 \lam`、`⚠ 缺少第 2 个参数 {…}`。阅读界面只显示红色原文。
 
 ## 物品与配方
 

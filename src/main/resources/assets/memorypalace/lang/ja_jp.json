@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "ノートが存在しません",
 	"error.memorypalace.rename_slash": "新しい名前にスラッシュは使用できません（名前の変更ではフォルダー間の移動はできません）",
 	"error.memorypalace.rename_taken": "このフォルダーには同じ名前のノートが既に存在します",
-	"error.memorypalace.not_found": "ノートまたはフォルダーが見つかりません"
+	"error.memorypalace.not_found": "ノートまたはフォルダーが見つかりません",
+	"screen.memorypalace.math_error.empty": "数式が空です",
+	"screen.memorypalace.math_error.too_long": "数式が %s 文字を超えています",
+	"screen.memorypalace.math_error.too_big": "数式が大きすぎて描画できません（%s ピクセル）",
+	"screen.memorypalace.math_error.missing_argument": "%s 番目の引数 {…} がありません",
+	"screen.memorypalace.math_error.unknown_command": "不明なコマンド %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "マクロ %s が自分自身に展開され続けます",
+	"screen.memorypalace.math_error.macro_too_long": "マクロの展開結果が %s 文字を超えます",
+	"screen.memorypalace.math_error.bad_definition": "定義を読み取れません。\\newcommand{\\名前}{内容} の形で書いてください",
+	"command.memorypalace.exported": "「%s」を記入済みの本として書き出しました（%s ページ）。Mod がなくても読めます",
+	"command.memorypalace.export_truncated": "ノートが長すぎて 1 冊に収まりません。%s ページで打ち切りました",
+	"command.memorypalace.export_encrypted": "暗号化されたノートは書き出せません：サーバーが内容を読めないためです"
 }

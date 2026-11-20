@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "A nota não existe",
 	"error.memorypalace.rename_slash": "O novo nome não pode conter uma barra (renomear não move a nota entre pastas)",
 	"error.memorypalace.rename_taken": "Esta pasta já contém uma nota com este nome",
-	"error.memorypalace.not_found": "A nota ou pasta não foi encontrada"
+	"error.memorypalace.not_found": "A nota ou pasta não foi encontrada",
+	"screen.memorypalace.math_error.empty": "Fórmula vazia",
+	"screen.memorypalace.math_error.too_long": "A fórmula passa de %s caracteres",
+	"screen.memorypalace.math_error.too_big": "A fórmula é grande demais para desenhar (%s pixels)",
+	"screen.memorypalace.math_error.missing_argument": "Falta o argumento %s em {…}",
+	"screen.memorypalace.math_error.unknown_command": "Comando desconhecido %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "A macro %s se expande em si mesma sem fim",
+	"screen.memorypalace.math_error.macro_too_long": "As macros se expandem para mais de %s caracteres",
+	"screen.memorypalace.math_error.bad_definition": "Definição ilegível; escreva \\newcommand{\\nome}{corpo}",
+	"command.memorypalace.exported": "\"%s\" exportada como livro escrito (%s páginas). Qualquer pessoa pode ler, mesmo sem o mod",
+	"command.memorypalace.export_truncated": "A nota é longa demais para um livro; o livro termina na página %s",
+	"command.memorypalace.export_encrypted": "Notas criptografadas não podem ser exportadas: o servidor não consegue lê-las"
 }

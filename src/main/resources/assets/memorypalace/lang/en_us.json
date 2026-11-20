@@ -412,5 +412,17 @@
 	"error.memorypalace.note_missing": "The note does not exist",
 	"error.memorypalace.rename_slash": "The new name cannot contain a slash (renaming does not move a note between folders)",
 	"error.memorypalace.rename_taken": "This folder already contains a note with this name",
-	"error.memorypalace.not_found": "The note or folder was not found"
+	"error.memorypalace.not_found": "The note or folder was not found",
+	"screen.memorypalace.math_error.empty": "Empty formula",
+	"screen.memorypalace.math_error.too_long": "Formula is longer than %s characters",
+	"screen.memorypalace.math_error.too_big": "Formula is too large to draw (%s pixels)",
+	"screen.memorypalace.math_error.missing_argument": "Missing argument %s in {…}",
+	"screen.memorypalace.math_error.unknown_command": "Unknown command %s",
+	"screen.memorypalace.math_error.syntax": "%s",
+	"screen.memorypalace.math_error.macro_loop": "Macro %s keeps expanding into itself",
+	"screen.memorypalace.math_error.macro_too_long": "Macros expand to more than %s characters",
+	"screen.memorypalace.math_error.bad_definition": "Unreadable definition, write \\newcommand{\\name}{body}",
+	"command.memorypalace.exported": "Exported \"%s\" as a written book (%s pages). Anyone can read it, even without the mod",
+	"command.memorypalace.export_truncated": "The note is too long for one written book; the book stops after %s pages",
+	"command.memorypalace.export_encrypted": "Encrypted notes can't be exported: the server can't read them"
 }
