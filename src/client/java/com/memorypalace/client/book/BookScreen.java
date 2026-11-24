@@ -20,6 +20,7 @@ import net.minecraft.client.gui.screens.inventory.BookViewScreen;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,15 +32,10 @@ import java.util.UUID;
  * 坐标约定："页内坐标"从书脊往外量：x=0 是书脊，右页向右为正；左页是右页的镜像。
  */
 public abstract class BookScreen extends Screen {
-	// ---- 原版 book.png 的九宫格切法（单位：贴图像素）----
-	// 不透明部分 x=20..165、y=1..181，书脊在左边。红色缝线每 12 像素一针，从 y=28 开始很规整。
-	private static final float TEX = 256.0F;
-	private static final int U_SPINE = 20, U_INNER = 36, U_OUTER = 148, U_EDGE = 166;
-	private static final int V_TOP = 1, V_TILE = 28, V_TILE_END = 88, V_BOTTOM = 148, V_END = 182;
-	private static final int SPINE_W = U_INNER - U_SPINE;      // 16：书脊边（含缝线），固定宽
-	private static final int EDGE_W = U_EDGE - U_OUTER;        // 18：外侧书页边，固定宽
-	private static final int TOP_H = V_TILE - V_TOP;           // 27：上边框，固定高
-	private static final int BOTTOM_H = V_END - V_BOTTOM;      // 34：下边框（含书角卷边），固定高
+	// ---- 原版 book.png 的尺寸（单位：贴图像素）：书页最小尺寸和文字区位置按它算，不随主题变 ----
+	// 不透明部分 x=20..165、y=1..181，书脊在左边。九宫格怎么切见 BookTheme（资源包可以换贴图和切法）
+	private static final int U_SPINE = 20, U_EDGE = 166;
+	private static final int V_TOP = 1, V_END = 182;
 	private static final int VANILLA_W = U_EDGE - U_SPINE;     // 146：原版一页宽
 	private static final int VANILLA_H = V_END - V_TOP;        // 181：原版一页高
 
@@ -119,6 +115,33 @@ public abstract class BookScreen extends Screen {
 	public void mouseMoved(double mouseX, double mouseY) {
 		if (encrypted) ClientKeys.touch();
 		super.mouseMoved(mouseX, mouseY);
+	}
+
+	// a short message above the book (PDF saved, nothing due…): chat is hard to see behind an open book
+	private Component notice;
+	private long noticeUntil;
+
+	/** Shows text above the book for a few seconds. */
+	public void notice(Component text) {
+		this.notice = text;
+		this.noticeUntil = System.currentTimeMillis() + 6_000;
+	}
+
+	/** The message shown now, or null (for tests). */
+	public Component currentNotice() {
+		return notice != null && System.currentTimeMillis() < noticeUntil ? notice : null;
+	}
+
+	@Override
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+		Component shown = currentNotice();
+		if (shown != null) {
+			int w = Math.min(this.width - 8, this.font.width(shown));
+			int y = Math.max(3, top - 12);
+			graphics.fill(spineX() - w / 2 - 4, y - 3, spineX() + w / 2 + 4, y + 11, 0xC0000000);
+			graphics.centeredText(this.font, shown, spineX(), y, 0xFFFFFFFF);
+		}
 	}
 
 	/**
@@ -201,7 +224,8 @@ public abstract class BookScreen extends Screen {
 			blocks.addAll(after);
 		}
 		return BookLayout.paginate(this.font, blocks,
-				(int) (textWidth() / fontScale), (int) (textHeight() / fontScale), new ScreenBoxes(collected.macros()));
+				(int) (textWidth() / fontScale), (int) (textHeight() / fontScale), new ScreenBoxes(collected.macros()),
+				BookSettings.typeface() == BookSettings.Typeface.LATEX);
 	}
 
 	/** 这个链接是不是断链（对应不上笔记）；默认都不是，阅读界面按服务端的结果覆盖。 */
@@ -218,6 +242,14 @@ public abstract class BookScreen extends Screen {
 	public static String describe(MathProblem problem) {
 		String key = "screen.memorypalace.math_error." + problem.kind().name().toLowerCase(java.util.Locale.ROOT);
 		return Component.translatable(key, problem.detail()).getString();
+	}
+
+	/**
+	 * What to show instead of a picture that is uploaded but cannot be fetched yet (the editor: "save the note to
+	 * show it"); null for the usual "image not found".
+	 */
+	protected String pendingImage(String src) {
+		return null;
 	}
 
 	/** 图片到了要重新排版：子类在这里重新调用 layout。 */
@@ -278,14 +310,15 @@ public abstract class BookScreen extends Screen {
 			}
 			tex = expansion.tex();
 			float px = pxPerUnit();
-			String key = key(tex, display, px);
+			int color = BookTheme.get().math();
+			String key = key(tex, display, px, color);
 			RasterTextures.Tex t = RasterTextures.get(key);
 			if (t == null) {
 				// 写错的公式也记住，编辑器实时预览时不用每帧重新试一遍（打到一半的 \lam 之类）
 				if (FAILED_MATH.containsKey(key)) {
 					return null;
 				}
-				var result = MathRenderer.render(tex, display, MATH_SIZE * px, BookLayout.MATH);
+				var result = MathRenderer.render(tex, display, MATH_SIZE * px, color);
 				if (!result.ok()) {
 					if (FAILED_MATH.size() > 1024) {
 						FAILED_MATH.clear();
@@ -299,11 +332,11 @@ public abstract class BookScreen extends Screen {
 					return null;
 				}
 			}
-			return new BookLayout.Box(t.id(), t.rasterW(), t.rasterH(), t.depth(), px);
+			return new BookLayout.Box(t.id(), t.rasterW(), t.rasterH(), t.depth(), px, null);
 		}
 
-		private static String key(String expandedTex, boolean display, float px) {
-			return "math|" + display + "|" + px + "|" + expandedTex;
+		private static String key(String expandedTex, boolean display, float px, int color) {
+			return "math|" + display + "|" + px + "|" + Integer.toHexString(color) + "|" + expandedTex;
 		}
 
 		@Override
@@ -313,18 +346,19 @@ public abstract class BookScreen extends Screen {
 			}
 			TexMacros.Expansion expansion = macros.expand(tex);
 			MathProblem problem = expansion.ok()
-					? FAILED_MATH.get(key(expansion.tex(), display, pxPerUnit())) : expansion.problem();
+					? FAILED_MATH.get(key(expansion.tex(), display, pxPerUnit(), BookTheme.get().math())) : expansion.problem();
 			return problem == null ? null : describe(problem);
 		}
 
 		@Override
 		public BookLayout.Box image(String src) {
 			// 加密笔记里的图片路径来自解密后的正文，不能发给服务端；图片文件本身也没加密。暂不支持
-			if (encrypted || noteId == null || NoteImageStore.state(noteId, src) != NoteImageStore.State.READY) {
+			if (encrypted || noteId == null) {
 				return null;
 			}
-			RasterTextures.Tex t = NoteImageStore.texture(noteId, src);
-			return t == null ? null : new BookLayout.Box(t.id(), t.rasterW(), t.rasterH(), 0, pxPerUnit());
+			// layout needs only the size; the texture is looked up when the page is drawn (see drawBox)
+			int[] size = NoteImageStore.size(noteId, src);
+			return size == null ? null : new BookLayout.Box(null, size[0], size[1], 0, pxPerUnit(), src);
 		}
 
 		@Override
@@ -334,6 +368,10 @@ public abstract class BookScreen extends Screen {
 			}
 			if (noteId != null && NoteImageStore.state(noteId, src) == NoteImageStore.State.LOADING) {
 				return Component.translatable("screen.memorypalace.image_loading").getString();
+			}
+			String pending = pendingImage(src);
+			if (pending != null) {
+				return pending;
 			}
 			return Component.translatable("screen.memorypalace.image_missing", alt.isEmpty() ? src : alt).getString();
 		}
@@ -349,39 +387,69 @@ public abstract class BookScreen extends Screen {
 		drawPageFrame(graphics, true);
 	}
 
-	/** 画一整页。九宫格：3 列（书脊边 / 纸面 / 外侧边）× 3 行（上边 / 中间 / 下边），中间部分重复平铺。 */
+	/**
+	 * 画一整页，样子来自 BookTheme（资源包可以换）。贴图页：九宫格，3 列（书脊边 / 纸面 / 外侧边）× 3 行（上边 / 中间 / 下边），
+	 * 中间部分重复平铺。Flat page: paper with a thin border, a soft shadow and a line along the spine.
+	 */
 	private void drawPageFrame(GuiGraphicsExtractor graphics, boolean mirrored) {
-		int[][] cols = {
-				{0, SPINE_W, U_SPINE, U_INNER},
-				{SPINE_W, pageW - EDGE_W, U_INNER, U_OUTER},
-				{pageW - EDGE_W, pageW, U_OUTER, U_EDGE}};
-		int[][] rows = {
-				{0, TOP_H, V_TOP, V_TILE},
-				{TOP_H, pageH - BOTTOM_H, V_TILE, V_TILE_END},
-				{pageH - BOTTOM_H, pageH, V_BOTTOM, V_END}};
-		for (int[] c : cols) {
-			for (int[] r : rows) {
-				tile(graphics, mirrored, c[0], c[1], c[2], c[3], r[0], r[1], r[2], r[3]);
+		switch (BookTheme.get().page()) {
+			case BookTheme.Flat flat -> drawFlatPage(graphics, mirrored, flat);
+			case BookTheme.Textured t -> {
+				int[] u = t.u();
+				int[] v = t.v();
+				int spineW = u[1] - u[0];
+				int edgeW = u[3] - u[2];
+				int topH = v[1] - v[0];
+				int bottomH = v[4] - v[3];
+				int[][] cols = {
+						{0, spineW, u[0], u[1]},
+						{spineW, pageW - edgeW, u[1], u[2]},
+						{pageW - edgeW, pageW, u[2], u[3]}};
+				int[][] rows = {
+						{0, topH, v[0], v[1]},
+						{topH, pageH - bottomH, v[1], v[2]},
+						{pageH - bottomH, pageH, v[3], v[4]}};
+				for (int[] c : cols) {
+					for (int[] r : rows) {
+						tile(graphics, t, mirrored, c[0], c[1], c[2], c[3], r[0], r[1], r[2], r[3]);
+					}
+				}
 			}
 		}
 	}
 
+	private void drawFlatPage(GuiGraphicsExtractor graphics, boolean mirrored, BookTheme.Flat flat) {
+		int x0 = mirrored ? spineX() - pageW : spineX();
+		int x1 = mirrored ? spineX() : spineX() + pageW;
+		int y0 = top;
+		int y1 = top + pageH;
+		// shadow below and on the outer side, then border, then paper
+		graphics.fill(x0 + (mirrored ? -2 : 2), y0 + 3, x1 + (mirrored ? -2 : 2), y1 + 3, flat.shadow());
+		graphics.fill(x0, y0, x1, y1, flat.border());
+		graphics.fill(x0 + (mirrored ? 1 : 0), y0 + 1, x1 - (mirrored ? 0 : 1), y1 - 1, flat.paper());
+		// the fold: a soft line where the pages meet
+		int fx = spineX() + (mirrored ? -3 : 0);
+		graphics.fill(fx, y0 + 1, fx + 3, y1 - 1, flat.spine());
+	}
+
 	/** 在页内区域 [x0,x1)×[y0,y1) 里重复铺贴图区域 [u0,u1)×[v0,v1)，最后一块按需截短。 */
-	private void tile(GuiGraphicsExtractor graphics, boolean mirrored,
+	private void tile(GuiGraphicsExtractor graphics, BookTheme.Textured t, boolean mirrored,
 			int x0, int x1, int u0, int u1, int y0, int y1, int v0, int v1) {
+		float texW = t.textureWidth();
+		float texH = t.textureHeight();
 		for (int x = x0; x < x1; x += u1 - u0) {
 			int w = Math.min(u1 - u0, x1 - x);
 			for (int y = y0; y < y1; y += v1 - v0) {
 				int h = Math.min(v1 - v0, y1 - y);
-				float ua = u0 / TEX, ub = (u0 + w) / TEX, va = v0 / TEX, vb = (v0 + h) / TEX;
+				float ua = u0 / texW, ub = (u0 + w) / texW, va = v0 / texH, vb = (v0 + h) / texH;
 				int sy = top + y;
 				if (mirrored) {
 					// 左页：屏幕上向左长，贴图 u 反过来（u0 > u1）就是镜像
 					int sx = spineX() - x - w;
-					graphics.blit(BookViewScreen.BOOK_LOCATION, sx, sy, sx + w, sy + h, ub, ua, va, vb);
+					graphics.blit(t.texture(), sx, sy, sx + w, sy + h, ub, ua, va, vb);
 				} else {
 					int sx = spineX() + x;
-					graphics.blit(BookViewScreen.BOOK_LOCATION, sx, sy, sx + w, sy + h, ua, ub, va, vb);
+					graphics.blit(t.texture(), sx, sy, sx + w, sy + h, ua, ub, va, vb);
 				}
 			}
 		}
@@ -395,22 +463,23 @@ public abstract class BookScreen extends Screen {
 		graphics.pose().scale(fontScale, fontScale);
 		int width = (int) (textWidth() / fontScale);
 		int y = 0;
+		BookTheme theme = BookTheme.get();
 		for (BookLine line : page) {
 			switch (line.kind()) {
-				case CODE -> graphics.fill(0, y - 1, width, y + line.height(), 0x1A3A2A10);
+				case CODE -> graphics.fill(0, y - 1, width, y + line.height(), theme.codeBackground());
 				case QUOTE -> {
 					for (int d = 0; d < line.depth(); d++) {
 						int bx = d * 6 + 1;
-						graphics.fill(bx, y - 1, bx + 2, y + line.height(), 0x55704A2A);
+						graphics.fill(bx, y - 1, bx + 2, y + line.height(), theme.quoteBar());
 					}
 				}
-				case RULE -> graphics.fill(0, y + 3, width, y + 4, 0x66704A2A);
+				case RULE -> graphics.fill(0, y + 3, width, y + 4, theme.rule());
 				default -> {}
 			}
 			for (BookLayout.Seg seg : line.segs()) {
 				switch (seg) {
 					// 原版书里的字没有阴影
-					case BookLayout.TextSeg t -> graphics.text(this.font, t.text(), t.x(), y + t.y(), BookLayout.TEXT, false);
+					case BookLayout.TextSeg t -> graphics.text(this.font, t.text(), t.x(), y + t.y(), theme.text(), false);
 					case BookLayout.BoxSeg b -> drawBox(graphics, b, y);
 				}
 			}
@@ -423,6 +492,17 @@ public abstract class BookScreen extends Screen {
 	 * 鼠标在这一页（画在 screenX 处）的哪个链接上；不在链接上时为 null。和 drawPage 用同样的位置换算。
 	 */
 	protected String linkAt(List<BookLine> page, int screenX, double mouseX, double mouseY) {
+		return BookLayout.linkOf(styleUnder(page, screenX, mouseX, mouseY, s -> BookLayout.linkOf(s) != null));
+	}
+
+	/** The to-do whose check box is under the mouse on this page, or null. */
+	protected Integer taskAt(List<BookLine> page, int screenX, double mouseX, double mouseY) {
+		return BookLayout.taskOf(styleUnder(page, screenX, mouseX, mouseY, s -> BookLayout.taskOf(s) != null));
+	}
+
+	/** The style of the character under the mouse on this page (drawn at screenX) that is wanted, or null. */
+	private Style styleUnder(List<BookLine> page, int screenX, double mouseX, double mouseY,
+			java.util.function.Predicate<Style> wanted) {
 		float x = (float) ((mouseX - screenX) / fontScale);
 		float y = (float) ((mouseY - (top + TEXT_TOP)) / fontScale);
 		if (x < 0 || y < 0) {
@@ -433,9 +513,9 @@ public abstract class BookScreen extends Screen {
 			if (y >= lineY && y < lineY + line.height()) {
 				for (BookLayout.Seg seg : line.segs()) {
 					if (seg instanceof BookLayout.TextSeg t && y >= lineY + t.y() - 1 && y < lineY + t.y() + this.font.lineHeight) {
-						String link = BookLayout.linkOf(styleAt(t.text(), x - t.x()));
-						if (link != null) {
-							return link;
+						Style style = styleAt(t.text(), x - t.x());
+						if (style != null && wanted.test(style)) {
+							return style;
 						}
 					}
 				}
@@ -446,6 +526,64 @@ public abstract class BookScreen extends Screen {
 		return null;
 	}
 
+	/**
+	 * Screen position of the first character on this page whose style matches (for tests: a to-do's box, a tag),
+	 * or null.
+	 */
+	protected int[] positionOf(List<BookLine> page, int screenX, java.util.function.Predicate<Style> wanted) {
+		int lineY = 0;
+		for (BookLine line : page) {
+			for (BookLayout.Seg seg : line.segs()) {
+				if (seg instanceof BookLayout.TextSeg t) {
+					float[] x = {0};
+					boolean[] found = {false};
+					t.text().accept((index, style, codepoint) -> {
+						if (wanted.test(style)) {
+							found[0] = true;
+							return false;
+						}
+						x[0] += this.font.getSplitter().stringWidth(net.minecraft.util.FormattedCharSequence.codepoint(codepoint, style));
+						return true;
+					});
+					if (found[0]) {
+						return new int[] {screenX + Math.round((t.x() + x[0] + 3) * fontScale),
+								top + TEXT_TOP + Math.round((lineY + t.y() + 4) * fontScale)};
+					}
+				}
+			}
+			lineY += line.height();
+		}
+		return null;
+	}
+
+	/** The picture under the mouse on this page (drawn at screenX), or null. Same position maths as drawPage. */
+	protected BookLayout.Box imageAt(List<BookLine> page, int screenX, double mouseX, double mouseY) {
+		float x = (float) ((mouseX - screenX) / fontScale);
+		float y = (float) ((mouseY - (top + TEXT_TOP)) / fontScale);
+		int lineY = 0;
+		for (BookLine line : page) {
+			for (BookLayout.Seg seg : line.segs()) {
+				if (seg instanceof BookLayout.BoxSeg b && b.box().image() != null) {
+					float w = b.box().width() * b.scale();
+					float h = b.box().height() * b.scale();
+					float by = lineY + b.y();
+					if (x >= b.x() && x < b.x() + w && y >= by && y < by + h) {
+						return b.box();
+					}
+				}
+			}
+			lineY += line.height();
+		}
+		return null;
+	}
+
+	/** Opens the picture full screen over this book (Esc comes back here). */
+	protected void viewImage(BookLayout.Box box) {
+		UUID id = noteId;
+		String src = box.image();
+		this.minecraft.gui.setScreen(new ImageViewerScreen(this, () -> NoteImageStore.texture(id, src), src));
+	}
+
 	/** 一行字里横坐标 x 处那个字的样式；在字的范围外为 null。 */
 	private Style styleAt(net.minecraft.util.FormattedCharSequence text, float x) {
 		if (x < 0) {
@@ -454,7 +592,8 @@ public abstract class BookScreen extends Screen {
 		float[] left = {0};
 		Style[] hit = {null};
 		text.accept((index, style, codepoint) -> {
-			float width = this.font.width(net.minecraft.util.FormattedCharSequence.codepoint(codepoint, style));
+			// exact (fractional) advance: rounding each character up drifts to the right in the LaTeX typeface
+			float width = this.font.getSplitter().stringWidth(net.minecraft.util.FormattedCharSequence.codepoint(codepoint, style));
 			if (x < left[0] + width) {
 				hit[0] = style;
 				return false;
@@ -465,15 +604,33 @@ public abstract class BookScreen extends Screen {
 		return hit[0];
 	}
 
-	/** 画公式/图片：缩到"1 贴图像素 = 1 屏幕像素"再画，保证清晰。 */
+	/**
+	 * 画公式/图片：缩到"1 贴图像素 = 1 屏幕像素"再画，保证清晰。A picture's texture is looked up now: only pictures
+	 * on screen are kept in memory, and one that was dropped is fetched again (a pale box shows meanwhile).
+	 */
 	private void drawBox(GuiGraphicsExtractor graphics, BookLayout.BoxSeg seg, int lineY) {
 		BookLayout.Box box = seg.box();
+		Identifier texture = box.texture();
+		int texW = box.rasterW();
+		int texH = box.rasterH();
+		if (box.image() != null) {
+			RasterTextures.Tex t = noteId == null ? null : NoteImageStore.texture(noteId, box.image());
+			if (t == null) {
+				float w = box.width() * seg.scale();
+				float h = box.height() * seg.scale();
+				graphics.fill(Math.round(seg.x()), lineY + Math.round(seg.y()), Math.round(seg.x() + w),
+						lineY + Math.round(seg.y() + h), BookTheme.get().codeBackground());
+				return;
+			}
+			texture = t.id();
+			texW = t.rasterW();
+			texH = t.rasterH();
+		}
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(seg.x(), lineY + seg.y());
 		float s = seg.scale() / box.pxPerUnit();
-		graphics.pose().scale(s, s);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, box.texture(), 0, 0, 0.0F, 0.0F,
-				box.rasterW(), box.rasterH(), box.rasterW(), box.rasterH());
+		graphics.pose().scale(s * box.rasterW() / texW, s * box.rasterH() / texH);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, texW, texH, texW, texH);
 		graphics.pose().popMatrix();
 	}
 

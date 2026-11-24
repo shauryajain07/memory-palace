@@ -101,13 +101,18 @@ public class SettingsScreen extends Screen {
 			BookSettings.setFontSize(BookSettings.next(BookSettings.fontSize()));
 			b.setMessage(fontSizeLabel());
 		}).bounds(x, y + ROW, WIDE, 20).build());
+		// LaTeX (Computer Modern) or Minecraft's pixel font for the text of books
+		addRenderableWidget(Button.builder(typefaceLabel(), b -> {
+			BookSettings.setTypeface(BookSettings.next(BookSettings.typeface()));
+			b.setMessage(typefaceLabel());
+		}).bounds(x, y + 2 * ROW, WIDE, 20).build());
 		addRenderableWidget(Button.builder(autoSaveLabel(), b -> {
 			BookSettings.setAutoSave(BookSettings.next(BookSettings.autoSave()));
 			b.setMessage(autoSaveLabel());
-		}).bounds(x, y + 2 * ROW, WIDE, 20).build());
+		}).bounds(x, y + 3 * ROW, WIDE, 20).build());
 		addRenderableWidget(Button.builder(Component.translatable("settings.memorypalace.edit_keys"),
 				b -> this.minecraft.gui.setScreen(new KeyBindsScreen(this, this.minecraft.options)))
-				.bounds(x, y + 3 * ROW, WIDE, 20).build());
+				.bounds(x, y + 4 * ROW, WIDE, 20).build());
 	}
 
 	// ---- 加密与解锁 ----
@@ -385,6 +390,10 @@ public class SettingsScreen extends Screen {
 
 	private static Component pageSizeLabel() {
 		return Component.translatable("settings.memorypalace.pagesize", BookSettings.label(BookSettings.pageSize()));
+	}
+
+	private static Component typefaceLabel() {
+		return Component.translatable("settings.memorypalace.typeface", BookSettings.label(BookSettings.typeface()));
 	}
 
 	private static Component fontSizeLabel() {

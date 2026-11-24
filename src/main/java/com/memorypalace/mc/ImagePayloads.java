@@ -50,13 +50,17 @@ public final class ImagePayloads {
 		}
 	}
 
-	/** 服务端 → 客户端：图片数据（PNG）。png 为空数组表示找不到或读不了。 */
-	public record Data(UUID noteId, String src, byte[] png) implements CustomPacketPayload {
+	/**
+	 * 服务端 → 客户端：图片数据（PNG）。png 为空数组表示找不到或读不了。
+	 * busy: the server is handling too many pictures for this player right now; ask again a little later.
+	 */
+	public record Data(UUID noteId, String src, byte[] png, boolean busy) implements CustomPacketPayload {
 		public static final Type<Data> TYPE = new Type<>(MemoryPalace.id("image_data"));
 		public static final StreamCodec<RegistryFriendlyByteBuf, Data> CODEC = StreamCodec.composite(
 				UUIDUtil.STREAM_CODEC, Data::noteId,
 				ByteBufCodecs.stringUtf8(1024), Data::src,
 				ByteBufCodecs.byteArray(MAX_BYTES), Data::png,
+				ByteBufCodecs.BOOL, Data::busy,
 				Data::new);
 
 		@Override
@@ -78,13 +82,13 @@ public final class ImagePayloads {
 			// 每人同时最多 PER_PLAYER 个、全服最多 GLOBAL 个在处理；超了直接回"没有"（客户端以后重开笔记会再要）
 			UUID playerId = player.getUUID();
 			if (!RATE.tryTake(playerId)) {
-				send(player, payload, new byte[0]);
+				sendBusy(player, payload);
 				return;
 			}
 			AtomicInteger mine = IN_FLIGHT.computeIfAbsent(playerId, id -> new AtomicInteger());
 			if (mine.incrementAndGet() > PER_PLAYER || !GLOBAL.tryAcquire()) {
 				mine.decrementAndGet();
-				send(player, payload, new byte[0]);
+				sendBusy(player, payload);
 				return;
 			}
 			// 权限按发请求这一刻的身份算；读文件、找图、缩放、编码放到后台线程，做完回到服务端线程发送
@@ -214,7 +218,14 @@ public final class ImagePayloads {
 
 	private static void send(ServerPlayer player, Request request, byte[] png) {
 		if (!player.hasDisconnected()) {
-			ServerPlayNetworking.send(player, new Data(request.noteId(), request.src(), png));
+			ServerPlayNetworking.send(player, new Data(request.noteId(), request.src(), png, false));
+		}
+	}
+
+	/** Too many requests right now: not "missing", the client asks again shortly. */
+	private static void sendBusy(ServerPlayer player, Request request) {
+		if (!player.hasDisconnected()) {
+			ServerPlayNetworking.send(player, new Data(request.noteId(), request.src(), new byte[0], true));
 		}
 	}
 

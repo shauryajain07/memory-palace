@@ -317,8 +317,34 @@ public final class VanillaBook {
 	 * 10 (Æ, Œ, ☑, ☐ …) and unifont reaches 9 (CJK). Too wide only wastes a little room; too narrow would make the
 	 * book screen wrap a line again and push the page's last line out of view.
 	 */
-	static int width(int codePoint, boolean bold) {
+	public static int width(int codePoint, boolean bold) {
 		int w = codePoint < 128 ? ASCII[codePoint] : 10;
 		return w == 0 ? 0 : w + (bold ? 1 : 0);
+	}
+
+	/** Width of a whole string in vanilla font pixels (same estimate as width(int, boolean)). */
+	public static int width(String text, boolean bold) {
+		return text.codePoints().map(cp -> width(cp, bold)).sum();
+	}
+
+	/** The text, cut and ended with "…" when it is wider than maxWidth font pixels. */
+	public static String fit(String text, int maxWidth, boolean bold) {
+		if (width(text, bold) <= maxWidth) {
+			return text;
+		}
+		int budget = maxWidth - width('…', bold);
+		var out = new StringBuilder();
+		int used = 0;
+		for (int i = 0; i < text.length(); ) {
+			int cp = text.codePointAt(i);
+			int w = width(cp, bold);
+			if (used + w > budget) {
+				break;
+			}
+			out.appendCodePoint(cp);
+			used += w;
+			i += Character.charCount(cp);
+		}
+		return out.toString().stripTrailing() + "…";
 	}
 }

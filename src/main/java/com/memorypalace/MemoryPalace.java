@@ -2,6 +2,10 @@ package com.memorypalace;
 
 import com.memorypalace.mc.CryptoPayloads;
 import com.memorypalace.mc.EditPayloads;
+import com.memorypalace.mc.UploadPayloads;
+import com.memorypalace.mc.TemplatePayloads;
+import com.memorypalace.mc.LecternPayloads;
+import com.memorypalace.mc.CardPayloads;
 import com.memorypalace.mc.FolderPayloads;
 import com.memorypalace.mc.ImagePayloads;
 import com.memorypalace.mc.OpenNotePayload;
@@ -35,6 +39,10 @@ public class MemoryPalace implements ModInitializer {
 		PayloadTypeRegistry.clientboundPlay().register(OpenNotePayload.TYPE, OpenNotePayload.CODEC);
 		ImagePayloads.register();
 		EditPayloads.register();
+		UploadPayloads.register();
+		TemplatePayloads.register();
+		LecternPayloads.register();
+		CardPayloads.register();
 		CryptoPayloads.register();
 		FolderPayloads.register();
 		SharePayloads.register();

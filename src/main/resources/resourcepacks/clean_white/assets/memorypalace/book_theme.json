@@ -1,0 +1,27 @@
+{
+	"page": {
+		"style": "flat",
+		"paper": "#FFFFFF",
+		"border": "#E3E2E0",
+		"shadow": "#28000000",
+		"spine": "#F1F1EF"
+	},
+	"colors": {
+		"text": "#37352F",
+		"heading": "#191919",
+		"muted": "#787774",
+		"code": "#EB5757",
+		"code_background": "#14878378",
+		"math": "#37352F",
+		"link": "#2E7DD7",
+		"broken_link": "#C4554D",
+		"error": "#E03E3E",
+		"quote_bar": "#FF37352F",
+		"rule": "#FFE9E9E7",
+		"menu_background": "#FFFFFFFF",
+		"menu_border": "#FFDCDAD6",
+		"menu_selected": "#FFEFEFED",
+		"menu_text": "#FF37352F",
+		"menu_hint": "#FF9B9A97"
+	}
+}

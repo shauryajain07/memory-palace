@@ -10,6 +10,8 @@
   <a href="README.md">English</a> | 简体中文
 </p>
 
+> 基于 [congyuemao/memory-palace](https://github.com/congyuemao/memory-palace)（MIT），加入了 Notion 风格编辑器、图片和 PDF、记忆卡片、标签、模板、导出 PDF、讲台书写和主题。模组在 [Releases](https://github.com/shauryajain07/memory-palace/releases) 下载。
+
 <p align="center">
   <a href="../../releases/latest">下载最新版</a>
 </p>
@@ -32,8 +34,15 @@ Inspired by [ins@aamanda.li](https://www.instagram.com/aamanda.li)'s [meme reel]
 - **Markdown**：标题、列表、任务清单、引用、代码块、表格、链接、本地图片（`![说明](图.png)` 与 Obsidian 的 `![[图.png]]`）。
 - **笔记之间的链接**：支持 Obsidian 的 `[[笔记名]]`、`[[文件夹/笔记名|显示文字]]`、`[[笔记名#标题]]`，以及 `[文字](文件夹/笔记.md)`。在书页上单击链接即可打开对应的笔记；查找规则与 Obsidian 相同，同名时优先选择同一文件夹中的笔记。单击网址会先请求确认，然后在浏览器中打开。`/palace backlinks <笔记>` 列出链接到这篇笔记的所有笔记（加密笔记的正文无法在服务端读取，因此不计入）。
 - **LaTeX**：行内公式 `$...$`，行间公式 `$$...$$`。在笔记任意公式里用 `\newcommand`、`\DeclareMathOperator` 定义自己的宏，整篇笔记的公式都能用（见[书写 LaTeX](#书写-latex)）。
+- **LaTeX 字体**：书页正文用 LaTeX 的 Computer Modern 字体排版（真正的粗体、斜体和打字机字体）；想用回 Minecraft 字体，在设置 → 正文字体里切换。
 - **游戏内编辑器**：左页编辑、右页实时预览，`Ctrl+S` 保存，`Ctrl+Z` 撤销，`Ctrl+Y`（或 `Ctrl+Shift+Z`）重做；文件在外部被改过时会提示冲突。输入 `\frac` 等 LaTeX 命令后按 `Tab` 插入模板；写错的公式会在预览里直接说明原因。
+- **像 Notion 一样写**：在编辑器里输入 `/` 弹出内容块菜单（标题、列表、待办、引用、代码、公式、表格、分隔线、链接、图片、PDF、今天的日期）。`Enter` 自动续写列表，`Tab` 缩进，`Ctrl+B` / `I` / `E` / `Shift+E` / `K` 把选中的字变成粗体、斜体、代码、公式或链接（见[像 Notion 一样写](#像-notion-一样写)）。
+- **图片和 PDF**：编辑时把文件拖到书上，用 `Ctrl+V` 粘贴截图，或者用 `/image`、`/pdf`。PDF 的每一页变成笔记里的一张图，PDF 本身放在笔记旁边。点任意图片可以全屏看（见[图片和 PDF](#图片和-pdf)）。
+- **用资源包换书的样子**：自带的**简洁白**资源包是白色书页加无衬线字体；自己做的资源包可以换书页和所有颜色（见[主题](#主题)）。
+- **学习工具**（见[学习工具](#学习工具)）：看书时直接勾选待办；☰ 跳到任意标题；`#标签`，可以按标签搜索；`/template` 插入每门课的课堂模板；用 `问题 :: 答案` 写记忆卡片，按间隔重复复习；任意笔记存成 PDF；在讲台上的书与笔里用完整的编辑器写字。
 - **导出为普通成书**：`/palace export <笔记>` 领到一本内容就是这篇笔记的原版成书，没装模组的玩家也能读；公式转成 Unicode（`x²`、`∫`、`½`）。
+- **普通的书也行**：自己手写、带公式或 Markdown 的成书也用同一个阅读界面打开（打开时按住 `Shift` 看原版界面）；书与笔多了"预览"按钮。
+- **按课程建图书馆**：`/palace library ENGG1101 MATH1851 …` 每门课建一个房间，有书架、告示牌和目录，书架上放好这门课的笔记（见[建图书馆](#建图书馆)）。
 
 **记忆宫殿**
 - **快速收集**：按 `K` 记下一个想法，写进当天的 `收件箱/yyyy-MM-dd.md`，之后再整理归位。
@@ -80,11 +89,17 @@ Inspired by [ins@aamanda.li](https://www.instagram.com/aamanda.li)'s [meme reel]
 |---|---|
 | `/palace give <笔记或文件夹>` | 领取笔记书；文件夹会领出里面每一篇（单次最多 36 本） |
 | `/palace export <笔记>` | 领一本写着笔记内容的普通成书，没装模组也能读（公式转成 Unicode，最多 100 页；加密笔记不行） |
+| `/palace library <课程代码>` | 在你面前建一座图书馆，每门课一个房间；建之前会先确认（管理员） |
+| `/palace shelve <文件夹>` | 把文件夹里还不在附近书架上的笔记放进你看着的雕纹书架 |
+| `/palace index <文件夹>` | 领一本列出文件夹里笔记和位置的书；点标题打开笔记 |
 | `/palace new <路径>` | 新建笔记并在游戏内编辑 |
 | `/palace list [文件夹]` | 列出笔记 |
 | `/palace where <笔记>` | 查看笔记所在的书架与讲台 |
 | `/palace open <笔记>` | 直接打开一篇笔记 |
 | `/palace backlinks <笔记>` | 列出链接到这篇笔记的笔记，单击即可打开 |
+| `/palace review [文件夹]` | 复习到期的记忆卡片（全部笔记，或某个文件夹） |
+| `/palace tags` | 列出你能读的笔记里的 `#标签`，点一个看它的笔记 |
+| `/palace tag <标签>` | 列出带这个标签（或它下面的子标签）的笔记，点击打开 |
 | `/palace share <玩家\|everyone> read\|edit <笔记>` | 把自己的笔记分享给别人（只读 / 可编辑） |
 | `/palace unshare <玩家\|everyone> <笔记>` | 取消分享 |
 | `/palace newsecret <路径>` | 新建加密笔记 |
@@ -135,6 +150,109 @@ $$
 支持 `\newcommand`、`\renewcommand`、`\providecommand`（最多 9 个参数，第一个参数可以有默认值）和 `\DeclareMathOperator` / `\DeclareMathOperator*`。只有定义的公式不显示。Obsidian（MathJax）也认常用的这些命令，但定义只对它后面的公式生效；如果也在 Obsidian 里看笔记，请把定义放在开头。
 
 **报错。** 编辑时，画不出来的公式保持红色，预览里会写出原因，例如 `⚠ 未知命令 \lam`、`⚠ 缺少第 2 个参数 {…}`。阅读界面只显示红色原文。
+
+## 像 Notion 一样写
+
+在编辑器里，在行首或空格后面输入 `/`，光标下方会弹出内容块菜单。接着输入可以筛选（`/h2`、`/todo`、`/math`、`/table`，也可以输入中文名称），用 `↑` `↓` 和 `Enter` 选择（或者直接点），按 `Esc` 就只输入一个斜杠。不管游戏是什么语言，英文名称都能用。
+
+| 菜单项 | 作用 |
+|---|---|
+| 标题 1–3、无序列表、有序列表、待办清单、引用 | 把当前这一行变成这种块：`我的标题 /h1` 变成 `# 我的标题` |
+| 代码块、公式块、表格、分隔线 | 单独占几行插入，光标放在里面 |
+| 行内公式、链接到笔记、今天的日期 | 输入 `$│$`、`[[`（随后弹出笔记名候选）或日期 |
+| 图片……、PDF…… | 打开电脑的选择文件窗口（见[图片和 PDF](#图片和-pdf)） |
+
+编辑器里的其他按键（macOS 上用 `Cmd` 代替 `Ctrl`）：
+
+| 按键 | 作用 |
+|---|---|
+| 在列表、待办、引用里按 `Enter` | 开始下一项（`- `、`2. `、`- [ ] `、`> `）；在空的一项上按则结束列表 |
+| 在列表项里按 `Tab` / `Shift+Tab` | 缩进到上一项下面 / 退回一级。其他地方的 `Tab` 照旧展开 LaTeX 模板 |
+| `Ctrl+B`、`Ctrl+I`、`Ctrl+E` | 给选中的字加粗体、斜体、`代码`；对已经加过的再按一次就去掉 |
+| `Ctrl+Shift+E` | 给选中的字加行内公式 `$…$` |
+| `Ctrl+K` | 把选中的字变成指向笔记的 `[[链接]]` |
+| 剪贴板里是图片时按 `Ctrl+V` | 把图片加进笔记（剪贴板里是文字时照常粘贴） |
+
+## 图片和 PDF
+
+编辑时，把图片（PNG、JPG、GIF、BMP）或 PDF 从桌面拖到游戏窗口上，用 `Ctrl+V` 粘贴图片，或者输入 `/image`、`/pdf` 选择文件。
+
+- **图片**缩小到最长边不超过 1600 像素，存到笔记旁边的 `attachments` 文件夹，并插入 `![名字](attachments/名字.png)`。预览里马上就能看到。
+- **PDF**：每一页变成一张图（最多 60 页），上面一行写着文件名、页数和**打开 PDF** 链接。PDF 本身也存在 `attachments` 里；世界在自己电脑上时，点链接用电脑的 PDF 阅读器打开（在服务器上文件留在服务器那边）。
+- **全屏看**：点书里任意一张图。滚轮缩放，拖动移动，双击恢复，`Esc` 返回。
+- **限制**：图片最大 6 MB，PDF 最大 30 MB。加密笔记、已上锁文件夹里的笔记和收件箱不能加文件，因为文件会以明文放在它们旁边。在服务器上只能给自己能编辑的笔记加文件；服务器会检查每个文件、自己决定文件名，并且从不覆盖已有文件。
+- 文件加进来时就已经存好了；保存笔记才会留下对它们的引用。
+- 图片以 `attachments/…` 的形式链接在笔记旁边。在游戏外把笔记移到别的文件夹时，请把它的 `attachments` 文件夹一起移过去。
+- 在加密笔记或给文件夹上锁之前加进来的文件，仍以明文放在笔记旁边。
+
+## 主题
+
+书的样子可以用资源包换。模组自带一个：**选项 → 资源包 → 记忆宫殿：简洁白**，白色书页、深灰色文字、红色行内代码、无衬线字体（Computer Modern Sans），和 Notion 很像。不管用哪种样子，编辑器里打字的地方都用打字机体 Computer Modern。
+
+自己做的话，在资源包里放 `assets/memorypalace/book_theme.json`：
+
+```json
+{
+  "page": { "style": "flat", "paper": "#FFFFFF", "border": "#E3E2E0", "shadow": "#28000000", "spine": "#F1F1EF" },
+  "colors": {
+    "text": "#37352F", "heading": "#191919", "muted": "#787774",
+    "code": "#EB5757", "code_background": "#14878378", "math": "#37352F",
+    "link": "#2E7DD7", "broken_link": "#C4554D", "error": "#E03E3E",
+    "quote_bar": "#FF37352F", "rule": "#FFE9E9E7",
+    "menu_background": "#FFFFFFFF", "menu_border": "#FFDCDAD6", "menu_selected": "#FFEFEFED",
+    "menu_text": "#FF37352F", "menu_hint": "#FF9B9A97"
+  }
+}
+```
+
+- 颜色写成 `#RRGGBB` 或 `#AARRGGBB`。不想改的项不写就行。
+- 想用贴图书页而不是纯色：`"page": { "style": "texture", "texture": "mypack:textures/gui/page.png", "texture_size": [256, 256], "u": [20, 36, 148, 166], "v": [1, 28, 88, 148, 182] }`。`u` 和 `v` 把图切成 3×3 九宫格（书脊边、纸面、外侧边；上、中、下），中间部分重复铺满大书页。模组自带的 `book_theme.json` 里是原版书的数值。
+- 想换字体，像简洁白那样替换 `assets/memorypalace/font/latex.json`（以及 `latex_bold`、`latex_italic`、`latex_bold_italic`、`latex_mono`）。
+- 主题文件写错了会被忽略，游戏日志里有警告。
+
+## 学习工具
+
+**待办。** 看书时点一下复选框就能勾上，笔记马上保存，不用打开编辑器。如果这期间笔记在别处被改过，不会覆盖，而是提示你重新打开。
+
+**目录。** 书下方的 ☰ 按钮列出这篇笔记的所有标题和页码；点一个（或用 `↑` `↓` `Enter`）翻到那里。
+
+**标签。** 在笔记任意位置写 `#期中`、`#exam/week3`（规则和 Obsidian 一样：代码和链接里的不算，`#123` 不算，`# 标题` 开头的 `#` 也不算）。标签显示成链接的颜色，点一下就搜索它。在搜索（`J`）里，`#期中` 找出带这个标签的笔记，`#exam` 也会找到 `#exam/week3`。`/palace tags` 列出所有标签。
+
+**模板。** 在编辑器里输入 `/template`（或 `/课堂`）插入课堂笔记模板，日期和课程代号会自动填好。想用自己的模板，就把笔记放进 `Templates` 文件夹：`Templates/Lecture.md` 对所有笔记有效，`Library/ENGG1101/Templates/Lab.md` 只对这门课有效（同名模板取最近的那个）。占位符：`{{date}}`、`{{time}}`、`{{title}}`、`{{class}}`（`Library/<代号>/` 下的笔记就是课程代号）、`{{folder}}`。
+
+**记忆卡片。** 任何一行 `问题 :: 答案` 都是一张卡片（两边都能用 Markdown 和 LaTeX；前面有列表符号也可以；代码块和 `` `行内代码` `` 里的不算）。有卡片的笔记在阅读界面会显示**复习**按钮，`/palace review [文件夹]` 一次复习很多笔记。复习时按 `空格` 看答案，然后 `1` 重来 · `2` 困难 · `3` 良好 · `4` 简单；每个按钮都写着这张卡片多久后再出现（SM-2 算法，和 Anki 一样）。每个玩家的复习进度存在笔记库的 `.palace/cards/` 里。加密笔记（服务端读不了）和模板不参与复习。
+
+**PDF。** 书下方的 **PDF** 按钮把笔记存到 `.minecraft/memory-palace-exports/` 并打开：A4 页面、Computer Modern 字体，公式、表格、代码、复选框都在，网址可以点。世界在自己电脑上时会放进图片；在服务器上只写图片名字。加密笔记不导出。
+
+**讲台上的书与笔。** 把书与笔放到讲台上，右键就能用记忆宫殿的编辑器在里面写（`/` 菜单、实时预览、所有快捷键都能用）；保存后写回讲台上的书，并按普通书的页面大小分页，所以没装模组的人也能正常看。潜行 + 右键是原版界面（可以取书）。你得有在那里建造的权限；多人游戏要打开多人总开关。如果这期间别人改过这本书，覆盖前会先问你。
+
+## 建图书馆
+
+站在空地上，面朝走廊要延伸的方向，输入课程代码：
+
+```
+/palace library ENGG1101 ENGG1330 ENGG1000 CCHU9078 MATH1851
+```
+
+模组会先告诉你建筑多大（5 个房间：宽 17、深 19、高 6）、要替换多少个现有方块，然后等你在 60 秒内点 **[建造]**。按你提问时站的位置和朝向建造。区域里有箱子、告示牌、书架等方块实体、超出世界或没加载时拒绝建造。被替换的方块找不回来，请在平坦的空地上建。
+
+建好后：
+
+- 一条石砖走廊向前延伸，房间左右交替（先左后右）。
+- 每个房间有 15 个雕纹书架（90 本书）、一盏灯笼，讲台上放着房间的**目录**：点目录里的标题打开那篇笔记。
+- 门旁边有写着课程代码的涂蜡告示牌。
+- 每门课一个文件夹：`Library/ENGG1101` 等。新建的空文件夹会放一篇"从这里开始"。
+- 这门课已有的笔记放上它的书架，先放与视线齐平的一排。
+
+之后：
+
+- **新笔记**：`/palace new Library/ENGG1101/第三周`，然后看着房间里的书架输入 `/palace shelve Library/ENGG1101`：已经在附近书架上的笔记会跳过。
+- **最新目录**：讲台上的目录是建造时的快照，`/palace index Library/ENGG1101` 领一本最新的。
+- **新增课程**：再运行一次 `/palace library` 会建一条*新*走廊，不会接在旧的后面。可以只给新课建一个房间，或者自己搭房间再用 `/palace shelve`。
+
+## 普通的书
+
+手写的成书（纯文本）里有公式或 Markdown（`$\frac{1}{2}$`、`# 标题`、`- 列表`、`**加粗**`）时，用记忆宫殿的阅读界面打开；打开时按住 `Shift` 看原版界面。带颜色、链接等样式的书（命令、`/palace export`、`/palace index` 生成的）和讲台上的书保持原版界面。书与笔编辑界面右上角有"预览"按钮。没装模组的玩家看到的还是纯文本。
 
 ## 物品与配方
 
@@ -287,6 +405,8 @@ $$A\mathbf{v} = \lambda \mathbf{v}$$
 - [fabric-permissions-api](https://github.com/lucko/fabric-permissions-api)（MIT）
 - [NightConfig](https://github.com/TheElectronWill/night-config)（LGPL-3.0）
 - [java-diff-utils](https://github.com/java-diff-utils/java-diff-utils)（Apache-2.0）
+- [Apache PDFBox](https://pdfbox.apache.org/)，含 FontBox 和 pdfbox-io（Apache-2.0）
+- [Apache Commons Logging](https://commons.apache.org/proper/commons-logging/)（Apache-2.0）
 
 完整声明见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 

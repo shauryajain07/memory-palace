@@ -35,6 +35,18 @@ public class SearchScreen extends Screen {
 		super(Component.translatable("screen.memorypalace.search"));
 	}
 
+	/** Opens with a search already typed in (a #tag clicked in a book) and runs it straight away. */
+	public SearchScreen(String initialQuery) {
+		this();
+		this.query = initialQuery;
+		this.pending = true;
+		this.lastEdit = 0;
+	}
+
+	String currentQuery() {
+		return query;
+	}
+
 	static void register() {
 		ClientPlayNetworking.registerGlobalReceiver(SearchPayloads.Results.TYPE, (payload, context) -> {
 			if (open != null && payload.requestId() == open.latestRequest) {

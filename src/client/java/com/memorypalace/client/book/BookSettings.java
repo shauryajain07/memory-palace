@@ -42,6 +42,11 @@ public final class BookSettings {
 		}
 	}
 
+	/** Book text: Computer Modern (the LaTeX look, default) or Minecraft's own pixel font. */
+	public enum Typeface {
+		LATEX, MINECRAFT
+	}
+
 	/** 多久没碰加密笔记就自动上锁。minutes = 0 表示不自动上锁（退出世界时仍然会锁）。 */
 	public enum AutoLock {
 		MIN_1(1), MIN_5(5), MIN_10(10), MIN_30(30), NEVER(0);
@@ -67,6 +72,7 @@ public final class BookSettings {
 	private static final Path FILE = FabricLoader.getInstance().getConfigDir().resolve("memorypalace.properties");
 	private static PageSize pageSize = PageSize.FIT;
 	private static FontSize fontSize = FontSize.NORMAL;
+	private static Typeface typeface = Typeface.LATEX;
 	private static AutoLock autoLock = AutoLock.MIN_10;
 	private static AutoSave autoSave = AutoSave.MIN_5;
 	private static boolean inboxEncryption = true;
@@ -125,6 +131,16 @@ public final class BookSettings {
 		save();
 	}
 
+	public static Typeface typeface() {
+		load();
+		return typeface;
+	}
+
+	public static void setTypeface(Typeface value) {
+		typeface = value;
+		save();
+	}
+
 	/** 按钮上显示的名字，例如 "铺满屏幕"。 */
 	public static Component label(Enum<?> value) {
 		return Component.translatable("settings.memorypalace." + value.getDeclaringClass().getSimpleName().toLowerCase(Locale.ROOT)
@@ -149,6 +165,7 @@ public final class BookSettings {
 			p.load(r);
 			pageSize = parse(PageSize.class, p.getProperty("page_size"), PageSize.FIT);
 			fontSize = parse(FontSize.class, p.getProperty("font_size"), FontSize.NORMAL);
+			typeface = parse(Typeface.class, p.getProperty("typeface"), Typeface.LATEX);
 			autoLock = parse(AutoLock.class, p.getProperty("auto_lock"), AutoLock.MIN_10);
 			autoSave = parse(AutoSave.class, p.getProperty("auto_save"), AutoSave.MIN_5);
 			inboxEncryption = !"false".equals(p.getProperty("inbox_encryption"));
@@ -169,6 +186,7 @@ public final class BookSettings {
 		Properties p = new Properties();
 		p.setProperty("page_size", pageSize.name());
 		p.setProperty("font_size", fontSize.name());
+		p.setProperty("typeface", typeface.name());
 		p.setProperty("auto_lock", autoLock.name());
 		p.setProperty("auto_save", autoSave.name());
 		p.setProperty("inbox_encryption", Boolean.toString(inboxEncryption));

@@ -98,6 +98,26 @@ public final class NoteLocations {
 		entries = updated;
 	}
 
+	/**
+	 * Records many placements at once (the library builder and /palace shelve put dozens of books on shelves):
+	 * same rules as record(), but the file is written once instead of once per book.
+	 */
+	public synchronized void recordAll(List<java.util.Map.Entry<UUID, Location>> placed) throws IOException {
+		if (placed.isEmpty()) {
+			return;
+		}
+		List<Entry> updated = new ArrayList<>(entries);
+		for (var item : placed) {
+			UUID noteId = Objects.requireNonNull(item.getKey());
+			Location location = item.getValue();
+			validate(location);
+			updated.removeIf(entry -> entry.location().samePlace(location));
+			updated.add(new Entry(noteId, location));
+		}
+		save(updated);
+		entries = updated;
+	}
+
 	/** 这篇笔记的所有位置，最近看到的排在前面。没有记录时为空列表。 */
 	public synchronized List<Location> get(UUID noteId) {
 		return entries.stream().filter(entry -> entry.noteId().equals(noteId)).map(Entry::location)

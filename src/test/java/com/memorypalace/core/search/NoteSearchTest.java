@@ -113,4 +113,19 @@ class NoteSearchTest {
 		assertTrue(hit.snippet().startsWith("…") && hit.snippet().endsWith("…"), hit.snippet());
 		assertFalse(hit.snippet().contains("\n"));
 	}
+
+	@Test
+	void searchesByTagIncludingNestedTagsButNotTemplates() throws IOException {
+		write("ENGG1101/Week 3.md", "# Week 3\nRevise for the #midterm and #exam/week3.");
+		write("ENGG1101/Week 4.md", "# Week 4\nNothing tagged, but the word midterm appears.");
+		write("Templates/Lecture.md", "# {{class}}\n#midterm placeholder");
+		vault.scan();
+		assertEquals(List.of("ENGG1101/Week 3.md"), paths(NoteSearch.search(vault, "#midterm", 10)));
+		assertEquals(List.of("ENGG1101/Week 3.md"), paths(NoteSearch.search(vault, "#EXAM", 10)), "nested and case-insensitive");
+		assertEquals(List.of("ENGG1101/Week 3.md"), paths(NoteSearch.search(vault, "#midterm week", 10)), "tag AND word");
+		assertTrue(NoteSearch.search(vault, "#nothing", 10).isEmpty());
+		assertEquals(List.of("exam/week3", "midterm"),
+				NoteSearch.tagsOf(vault, vault.list().stream().filter(n -> n.relativePath().equals("ENGG1101/Week 3.md"))
+						.findFirst().orElseThrow()).stream().sorted().toList());
+	}
 }

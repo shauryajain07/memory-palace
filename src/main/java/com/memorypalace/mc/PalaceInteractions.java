@@ -118,6 +118,10 @@ public final class PalaceInteractions {
 						|| !(level.getBlockEntity(hit.getBlockPos()) instanceof LecternBlockEntity lectern)) {
 					return InteractionResult.PASS;
 				}
+				// a book and quill: write in it with the Memory Palace editor (vanilla read-only screen if not allowed)
+				if (lectern.getBook().is(net.minecraft.world.item.Items.WRITABLE_BOOK)) {
+					return LecternPayloads.open(serverPlayer, hit.getBlockPos()) ? InteractionResult.SUCCESS : InteractionResult.PASS;
+				}
 				Optional<UUID> id = NoteBooks.idOf(lectern.getBook());
 				if (id.isEmpty()) {
 					return InteractionResult.PASS;

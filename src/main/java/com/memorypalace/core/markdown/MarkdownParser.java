@@ -48,6 +48,20 @@ public final class MarkdownParser {
 	 * - 永远不抛异常；null 或空字符串返回空列表
 	 */
 	public static List<MdBlock> parse(String markdown) {
+		return parse(markdown, new ArrayList<>());
+	}
+
+	/**
+	 * Where each to-do's box ("[ ]" or "[x]") is in the text: the offset of its "[", one per ListItem with checked
+	 * != null that parse emits, in the same order. A click on the n-th check box in the book toggles offset n.
+	 */
+	public static List<Integer> taskMarkers(String markdown) {
+		var tasks = new ArrayList<Integer>();
+		parse(markdown, tasks);
+		return List.copyOf(tasks);
+	}
+
+	private static List<MdBlock> parse(String markdown, List<Integer> tasks) {
 		if (markdown == null || markdown.isEmpty()) {
 			return List.of();
 		}
@@ -59,7 +73,7 @@ public final class MarkdownParser {
 					.includeSourceSpans(IncludeSourceSpans.BLOCKS)
 					.customInlineContentParserFactory(new MathParserFactory())
 					.build();
-			new BlockReader(markdown, blocks).read(parser.parse(markdown), 0, 0, null);
+			new BlockReader(markdown, blocks, tasks).read(parser.parse(markdown), 0, 0, null);
 			return List.copyOf(blocks);
 		} catch (Throwable ignored) {
 			// 深度嵌套导致的栈溢出也降级，保留已经转换的块。
@@ -72,10 +86,28 @@ public final class MarkdownParser {
 	private static final class BlockReader {
 		private final String source;
 		private final List<MdBlock> blocks;
+		private final List<Integer> tasks;
 
-		private BlockReader(String source, List<MdBlock> blocks) {
+		private BlockReader(String source, List<MdBlock> blocks, List<Integer> tasks) {
 			this.source = source;
 			this.blocks = blocks;
+			this.tasks = tasks;
+		}
+
+		// "- [ ]", "* [x]", "3. [X]" at the start of a list item: group 1 is the box
+		private static final java.util.regex.Pattern TASK_BOX =
+				java.util.regex.Pattern.compile("^(?:[-*+]|\\d{1,9}[.)])[ \\t]+(\\[[ xX]\\])");
+
+		/** Offset of the "[" of this list item's check box in the source, or -1. */
+		private int taskOffset(Node item) {
+			List<SourceSpan> spans = item.getSourceSpans();
+			if (spans.isEmpty()) {
+				return -1;
+			}
+			int start = spans.getFirst().getInputIndex();
+			int end = source.indexOf('\n', start);
+			var m = TASK_BOX.matcher(source.substring(start, end < 0 ? source.length() : end));
+			return m.find() ? start + m.start(1) : -1;
 		}
 
 		private void read(Node node, int listDepth, int quoteDepth, ItemState item) {
@@ -123,7 +155,7 @@ public final class MarkdownParser {
 					String marker = node instanceof OrderedList ? number++ + "." : "•";
 					Boolean checked = child.getFirstChild() instanceof TaskListItemMarker task
 							? task.isChecked() : null;
-					var state = new ItemState(listDepth, marker, checked);
+					var state = new ItemState(listDepth, marker, checked, checked == null ? -1 : taskOffset(child));
 					if (child.getFirstChild() == null) {
 						addParagraph(List.of(), quoteDepth, state);
 					} else {
@@ -193,6 +225,9 @@ public final class MarkdownParser {
 
 		private void addParagraph(List<MdSpan> spans, int quoteDepth, ItemState item) {
 			if (item != null) {
+				if (item.first && item.checked != null) {
+					tasks.add(item.markerOffset);
+				}
 				blocks.add(new MdBlock.ListItem(item.depth, item.first ? item.marker : null,
 						item.first ? item.checked : null, spans));
 				item.first = false;
@@ -220,12 +255,14 @@ public final class MarkdownParser {
 		private final int depth;
 		private final String marker;
 		private final Boolean checked;
+		private final int markerOffset;
 		private boolean first = true;
 
-		private ItemState(int depth, String marker, Boolean checked) {
+		private ItemState(int depth, String marker, Boolean checked, int markerOffset) {
 			this.depth = depth;
 			this.marker = marker;
 			this.checked = checked;
+			this.markerOffset = markerOffset;
 		}
 	}
 
@@ -240,7 +277,36 @@ public final class MarkdownParser {
 	private static List<MdSpan> spans(Node parent) {
 		var result = new ArrayList<MdSpan>();
 		readInlines(parent, 0, null, result);
-		return withWikiLinks(result);
+		return withTags(withWikiLinks(result));
+	}
+
+	/** Splits #tags out of plain text into spans whose link is Tags.LINK_PREFIX + tag (see Tags for the rules). */
+	private static List<MdSpan> withTags(List<MdSpan> spans) {
+		var out = new ArrayList<MdSpan>();
+		for (MdSpan span : spans) {
+			if (span.link() != null || span.has(MdSpan.CODE) || span.has(MdSpan.MATH) || span.text().indexOf('#') < 0) {
+				out.add(span);
+				continue;
+			}
+			var m = Tags.PATTERN.matcher(span.text());
+			int last = 0;
+			while (m.find()) {
+				String tag = Tags.clean(m.group(1));
+				if (tag == null) {
+					continue;
+				}
+				int end = m.start(1) + tag.length();
+				if (m.start() > last) {
+					out.add(new MdSpan(span.text().substring(last, m.start()), span.styles(), null));
+				}
+				out.add(new MdSpan("#" + tag, span.styles(), Tags.LINK_PREFIX + tag));
+				last = end;
+			}
+			if (last < span.text().length()) {
+				out.add(new MdSpan(span.text().substring(last), span.styles(), null));
+			}
+		}
+		return List.copyOf(out);
 	}
 
 	// [[目标]] 或 [[目标|显示文字]]；目标里不能有方括号、竖线、换行
@@ -276,8 +342,23 @@ public final class MarkdownParser {
 		return List.copyOf(out);
 	}
 
-	/** 正文里所有链接的 link（按出现顺序，可能重复）：标题、段落、列表、引用、表格里的都算。永远不抛异常。 */
+	/** 正文里所有链接的 link（按出现顺序，可能重复）：标题、段落、列表、引用、表格里的都算。永远不抛异常。Tags are not links. */
 	public static List<String> links(String markdown) {
+		return spanLinks(markdown).stream().filter(link -> !Tags.isTagLink(link)).toList();
+	}
+
+	/** The note's #tags (without "#"), lower case, each once, in order of first appearance. */
+	public static List<String> tags(String markdown) {
+		var out = new java.util.LinkedHashSet<String>();
+		for (String link : spanLinks(markdown)) {
+			if (Tags.isTagLink(link)) {
+				out.add(Tags.name(link).toLowerCase(java.util.Locale.ROOT));
+			}
+		}
+		return List.copyOf(out);
+	}
+
+	private static List<String> spanLinks(String markdown) {
 		var out = new ArrayList<String>();
 		for (MdBlock block : parse(markdown)) {
 			List<List<MdSpan>> groups = switch (block) {

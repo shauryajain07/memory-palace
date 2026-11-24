@@ -28,6 +28,19 @@ loom {
 	}
 }
 
+// Game tests: a separate "gametest" source set run in a headless server (./gradlew runGameTest).
+// They build a library in a real world and check the blocks; nothing from them goes into the mod jar.
+fabricApi {
+	configureTests {
+		createSourceSet = true
+		modId = "memorypalace-test"
+		enableGameTests = true
+		// client tests open a real game window and take screenshots of book pages (./gradlew runClientGameTest)
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
@@ -60,6 +73,15 @@ dependencies {
 		implementation "com.electronwill.night-config:${lib}:${project.night_config_version}"
 		include "com.electronwill.night-config:${lib}:${project.night_config_version}"
 	}
+
+	// PDF upload: the client turns each page into a picture (Apache PDFBox, Apache-2.0). include is not transitive,
+	// so each runtime dependency of pdfbox is nested on its own (bouncycastle is optional and left out)
+	for (String lib : ["pdfbox", "pdfbox-io", "fontbox"]) {
+		implementation "org.apache.pdfbox:${lib}:${project.pdfbox_version}"
+		include "org.apache.pdfbox:${lib}:${project.pdfbox_version}"
+	}
+	implementation "commons-logging:commons-logging:${project.commons_logging_version}"
+	include "commons-logging:commons-logging:${project.commons_logging_version}"
 
 	// Mod Menu 是可选的：编译时用它的接口，开发版游戏里也装上方便测试，但不打包进模组
 	compileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"

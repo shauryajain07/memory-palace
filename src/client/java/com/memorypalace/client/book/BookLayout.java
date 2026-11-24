@@ -5,6 +5,7 @@ import com.memorypalace.core.markdown.MdSpan;
 import net.minecraft.client.StringSplitter;
 import net.minecraft.client.gui.Font;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.FontDescription;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
@@ -21,28 +22,37 @@ import java.util.List;
  * 单位：排版单位 = 未放大的字体像素（画的时候整页再乘字体大小）。
  */
 public final class BookLayout {
-	// 原版书的字是纯黑；其他颜色都挑了在羊皮纸上看得清的深色
-	public static final int TEXT = 0xFF000000;
-	static final int HEADING = 0xFF3B2410;
-	public static final int MUTED = 0xFF5A4A3A;
-	static final int CODE = 0xFF1F4A2A;
-	public static final int MATH = 0xFF1A3A7A;
-	static final int LINK = 0xFF1A3AA0;
-	// 指向不存在笔记的链接（断链）：暗红，点了会问要不要新建
-	static final int BROKEN_LINK = 0xFF9A3A2A;
+	// Colours come from the theme (BookTheme, which a resource pack can replace); the default is the parchment book
 	// 链接地址挂在文字样式的 insertion 上（书页里不会用到它），点击时按位置取回来（见 BookScreen.linkAt）
 	private static final String LINK_PREFIX = "memorypalace-link:";
+
+	// to-do check boxes carry their number the same way, so a click can tick the right one (see TaskToggle)
+	private static final String TASK_PREFIX = "memorypalace-task:";
+
+	/** The number of the to-do whose check box has this style; null for anything else. */
+	public static Integer taskOf(Style style) {
+		String insertion = style == null ? null : style.getInsertion();
+		if (insertion == null || !insertion.startsWith(TASK_PREFIX)) {
+			return null;
+		}
+		try {
+			return Integer.parseInt(insertion.substring(TASK_PREFIX.length()));
+		} catch (NumberFormatException e) {
+			return null;
+		}
+	}
 
 	/** 这段文字样式上挂的链接地址（MdSpan.link）；不是链接时为 null。 */
 	public static String linkOf(Style style) {
 		String insertion = style == null ? null : style.getInsertion();
 		return insertion != null && insertion.startsWith(LINK_PREFIX) ? insertion.substring(LINK_PREFIX.length()) : null;
 	}
-	static final int ERROR = 0xFFA02020;
 	// The explanation under a broken formula in the editor preview: same red, smaller weight (italic, not bold)
 	private static final String ERROR_MARK = "⚠ ";
-	private static final Style ERROR_NOTE = Style.EMPTY.withColor(ERROR).withItalic(true).withBold(false)
-			.withUnderlined(false);
+
+	private Style errorNote() {
+		return Style.EMPTY.withColor(theme.error()).withItalic(true).withBold(false).withUnderlined(false);
+	}
 
 	private static final int INDENT = 8;
 	private static final int BLOCK_GAP = 4;
@@ -54,7 +64,7 @@ public final class BookLayout {
 	 * 一个图块（公式或图片）对应的贴图。贴图按"屏幕实际像素"生成，pxPerUnit 是 1 个排版单位对应多少贴图像素，
 	 * 这样画出来 1 个贴图像素 = 1 个屏幕像素，不会糊。
 	 */
-	public record Box(Identifier texture, int rasterW, int rasterH, int rasterDepth, float pxPerUnit) {
+	public record Box(Identifier texture, int rasterW, int rasterH, int rasterDepth, float pxPerUnit, String image) {
 		float width() { return rasterW / pxPerUnit; }
 		float height() { return rasterH / pxPerUnit; }
 		float depth() { return rasterDepth / pxPerUnit; }
@@ -93,14 +103,36 @@ public final class BookLayout {
 	public record BoxSeg(float x, float y, Box box, float scale) implements Seg {}
 
 	/** 一行。kind 决定额外的装饰（代码底色、引用竖线、分隔线）。 */
-	public record BookLine(Kind kind, int depth, int height, List<Seg> segs) {}
+	/** heading: the number of the heading this line starts (0 = the first heading of the note), -1 for other lines. */
+	public record BookLine(Kind kind, int depth, int height, List<Seg> segs, int heading) {
+		public BookLine(Kind kind, int depth, int height, List<Seg> segs) {
+			this(kind, depth, height, segs, -1);
+		}
+	}
+
+	/** The page that heading number heading (in note order) starts on, or -1. Pages may shift as pictures load. */
+	public static int pageOfHeading(List<List<BookLine>> pages, int heading) {
+		for (int p = 0; p < pages.size(); p++) {
+			for (BookLine line : pages.get(p)) {
+				if (line.heading() == heading) {
+					return p;
+				}
+			}
+		}
+		return -1;
+	}
 
 	public enum Kind { TEXT, CODE, QUOTE, RULE, GAP }
 
 	// 排版时的"零件"：一段同样式的文字，或一个图块
 	private sealed interface Piece {}
 
-	private record TextPiece(String text, Style style) implements Piece {}
+	// code = set in the typewriter face (inline code, code blocks)
+	private record TextPiece(String text, Style style, boolean code) implements Piece {
+		TextPiece(String text, Style style) {
+			this(text, style, false);
+		}
+	}
 
 	private record BoxPiece(Box box) implements Piece {}
 
@@ -109,19 +141,92 @@ public final class BookLayout {
 	private final int pageWidth;
 	private final int pageHeight;
 	private final Boxes boxes;
+	private final boolean latex;
+	private final BookTheme theme = BookTheme.get();
 	private final List<BookLine> lines = new ArrayList<>();
+	// to-dos seen so far, and the number to put on the next list marker drawn (null: not a to-do)
+	private int tasks;
+	private String markerInsertion;
+	// headings seen so far, and the heading the next finished line starts (-1: none)
+	private int headings;
+	private int pendingHeading = -1;
 
-	private BookLayout(Font font, int pageWidth, int pageHeight, Boxes boxes) {
+	// Computer Modern, the LaTeX typeface (assets/memorypalace/font/latex*.json). Real bold and italic files are used
+	// instead of Minecraft's fake bold (drawn twice) and fake italic (slanted)
+	private static final FontDescription LATEX = font("latex");
+	private static final FontDescription LATEX_BOLD = font("latex_bold");
+	private static final FontDescription LATEX_ITALIC = font("latex_italic");
+	private static final FontDescription LATEX_BOLD_ITALIC = font("latex_bold_italic");
+	private static final FontDescription LATEX_MONO = font("latex_mono");
+
+	private static FontDescription font(String name) {
+		return new FontDescription.Resource(Identifier.fromNamespaceAndPath("memorypalace", name));
+	}
+
+	/**
+	 * Text around the pages (headers, page numbers, the "/" menu) in the book's typeface when LaTeX is on, so the
+	 * whole book looks the same; Minecraft's font otherwise.
+	 */
+	public static Component ui(Component text) {
+		return BookSettings.typeface() == BookSettings.Typeface.LATEX ? text.copy().withStyle(s -> s.withFont(LATEX)) : text;
+	}
+
+	public static Component ui(String text) {
+		return ui(Component.literal(text));
+	}
+
+	/** Markdown or LaTeX source shown around the pages (the "/" menu's hints): the typewriter face. */
+	public static Component uiCode(String text) {
+		Component literal = Component.literal(text);
+		return BookSettings.typeface() == BookSettings.Typeface.LATEX ? literal.copy().withStyle(s -> s.withFont(LATEX_MONO)) : literal;
+	}
+
+	private static java.lang.reflect.Field fontProvider;
+
+	/**
+	 * A copy of base whose plain text is set in typewriter Computer Modern instead of Minecraft's font, for the
+	 * editor's typing area: the vanilla text box measures and draws with whatever Font it is given, so cursor,
+	 * wrapping and selection all follow. Falls back to base if the game's Font cannot be wrapped.
+	 */
+	public static Font editorFont(Font base) {
+		try {
+			if (fontProvider == null) {
+				fontProvider = Font.class.getDeclaredField("provider");
+				fontProvider.setAccessible(true);
+			}
+			Font.Provider provider = (Font.Provider) fontProvider.get(base);
+			return new Font(new Font.Provider() {
+				@Override
+				public net.minecraft.client.gui.GlyphSource glyphs(FontDescription description) {
+					return provider.glyphs(description.equals(FontDescription.DEFAULT) ? LATEX_MONO : description);
+				}
+
+				@Override
+				public net.minecraft.client.gui.font.glyphs.EffectGlyph effect() {
+					return provider.effect();
+				}
+			});
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return base;
+		}
+	}
+
+	private BookLayout(Font font, int pageWidth, int pageHeight, Boxes boxes, boolean latex) {
 		this.font = font;
 		this.splitter = font.getSplitter();
 		this.pageWidth = pageWidth;
 		this.pageHeight = pageHeight;
 		this.boxes = boxes;
+		this.latex = latex;
 	}
 
-	/** 排版并分页：文字区宽 pageWidth、高 pageHeight（排版单位）。返回的每一项是一页的行，至少一页。 */
-	public static List<List<BookLine>> paginate(Font font, List<MdBlock> blocks, int pageWidth, int pageHeight, Boxes boxes) {
-		BookLayout layout = new BookLayout(font, pageWidth, pageHeight, boxes);
+	/**
+	 * 排版并分页：文字区宽 pageWidth、高 pageHeight（排版单位）。返回的每一项是一页的行，至少一页。
+	 * latex: set the text in Computer Modern instead of Minecraft's pixel font (BookSettings.Typeface).
+	 */
+	public static List<List<BookLine>> paginate(Font font, List<MdBlock> blocks, int pageWidth, int pageHeight, Boxes boxes,
+			boolean latex) {
+		BookLayout layout = new BookLayout(font, pageWidth, pageHeight, boxes, latex);
 		for (MdBlock block : blocks) {
 			layout.add(block);
 		}
@@ -134,42 +239,48 @@ public final class BookLayout {
 				if (!lines.isEmpty()) {
 					gap(BLOCK_GAP);
 				}
-				Style style = Style.EMPTY.withColor(HEADING).withBold(true)
+				Style style = Style.EMPTY.withColor(theme.heading()).withBold(true)
 						.withUnderlined(h.level() == 1).withItalic(h.level() >= 3);
+				pendingHeading = headings++;
 				flow(Kind.TEXT, 0, pieces(h.spans(), style), null, 0);
+				pendingHeading = -1;
 				gap(BLOCK_GAP);
 			}
 			case MdBlock.Paragraph p -> {
-				flow(Kind.TEXT, 0, pieces(p.spans(), Style.EMPTY.withColor(TEXT)), null, 0);
+				flow(Kind.TEXT, 0, pieces(p.spans(), Style.EMPTY.withColor(theme.text())), null, 0);
 				gap(BLOCK_GAP);
 			}
 			case MdBlock.ListItem item -> {
 				int x = item.depth() * INDENT;
 				String marker = item.checked() == null ? item.marker()
 						: (item.checked() ? "☑" : "☐");
-				Style base = Style.EMPTY.withColor(item.checked() == Boolean.TRUE ? MUTED : TEXT)
+				Style base = Style.EMPTY.withColor(item.checked() == Boolean.TRUE ? theme.muted() : theme.text())
 						.withStrikethrough(item.checked() == Boolean.TRUE ? true : null);
+				if (item.checked() != null) {
+					markerInsertion = TASK_PREFIX + tasks++;
+				}
 				flow(Kind.TEXT, x, pieces(item.spans(), base), marker, 0);
+				markerInsertion = null;
 				gap(1);
 			}
 			case MdBlock.Quote q -> {
-				flow(Kind.QUOTE, q.depth() * 6, pieces(q.spans(), Style.EMPTY.withColor(MUTED).withItalic(true)), null, q.depth());
+				flow(Kind.QUOTE, q.depth() * 6, pieces(q.spans(), Style.EMPTY.withColor(theme.muted()).withItalic(true)), null, q.depth());
 				gap(BLOCK_GAP);
 			}
 			case MdBlock.Code c -> {
-				Style style = Style.EMPTY.withColor(CODE);
+				Style style = Style.EMPTY.withColor(theme.code());
 				for (String line : c.text().split("\n", -1)) {
-					flow(Kind.CODE, 3, List.of(new TextPiece(line.isEmpty() ? " " : line, style)), null, 0);
+					flow(Kind.CODE, 3, List.of(new TextPiece(line.isEmpty() ? " " : line, style, true)), null, 0);
 				}
 				gap(BLOCK_GAP);
 			}
 			case MdBlock.Math m -> {
 				Box box = boxes.math(m.tex(), true);
 				if (box == null) {
-					flow(Kind.TEXT, 0, List.of(new TextPiece("$$" + m.tex() + "$$", Style.EMPTY.withColor(ERROR))), null, 0);
+					flow(Kind.TEXT, 0, List.of(new TextPiece("$$" + m.tex() + "$$", Style.EMPTY.withColor(theme.error()))), null, 0);
 					String error = boxes.mathError(m.tex(), true);
 					if (error != null) {
-						flow(Kind.TEXT, 0, List.of(new TextPiece(ERROR_MARK + error, ERROR_NOTE)), null, 0);
+						flow(Kind.TEXT, 0, List.of(new TextPiece(ERROR_MARK + error, errorNote())), null, 0);
 					}
 				} else {
 					centeredBox(box, false);
@@ -180,7 +291,7 @@ public final class BookLayout {
 				Box box = boxes.image(img.src());
 				if (box == null) {
 					flow(Kind.TEXT, 0, List.of(new TextPiece(boxes.imagePlaceholder(img.src(), img.alt()),
-							Style.EMPTY.withColor(MUTED).withItalic(true))), null, 0);
+							Style.EMPTY.withColor(theme.muted()).withItalic(true))), null, 0);
 				} else {
 					// 图片铺满页宽（小图也放大），太高就按页高缩
 					centeredBox(box, true);
@@ -193,12 +304,12 @@ public final class BookLayout {
 			}
 			case MdBlock.Table t -> {
 				for (int i = 0; i < t.rows().size(); i++) {
-					Style style = Style.EMPTY.withColor(TEXT).withBold(i == 0 ? true : null);
+					Style style = Style.EMPTY.withColor(theme.text()).withBold(i == 0 ? true : null);
 					List<Piece> row = new ArrayList<>();
 					List<List<MdSpan>> cells = t.rows().get(i);
 					for (int c = 0; c < cells.size(); c++) {
 						if (c > 0) {
-							row.add(new TextPiece(" │ ", Style.EMPTY.withColor(MUTED)));
+							row.add(new TextPiece(" │ ", Style.EMPTY.withColor(theme.muted())));
 						}
 						row.addAll(pieces(cells.get(c), style));
 					}
@@ -265,7 +376,8 @@ public final class BookLayout {
 					segs.add(new BoxSeg(ix, a - (box.height() - box.depth()) * scale, box, scale));
 				}
 			}
-			lines.add(new BookLine(kind, depth, Math.max(height, font.lineHeight), segs));
+			lines.add(new BookLine(kind, depth, Math.max(height, font.lineHeight), segs, pendingHeading));
+			pendingHeading = -1; // only the heading's first line is its anchor
 		}
 	}
 
@@ -276,7 +388,10 @@ public final class BookLayout {
 		float indent = x;
 		LineBuilder line = new LineBuilder(kind, depth, x);
 		if (marker != null) {
-			Style ms = Style.EMPTY.withColor(MUTED);
+			Style ms = face(Style.EMPTY.withColor(theme.muted()), false);
+			if (markerInsertion != null) {
+				ms = ms.withInsertion(markerInsertion);
+			}
 			line.addText(marker + " ", ms);
 			indent = line.x;
 		}
@@ -292,18 +407,35 @@ public final class BookLayout {
 					line.addBox(bp.box(), scale);
 				}
 				case TextPiece tp -> {
+					// the font is chosen here, so measuring (line breaks) and drawing use the same typeface
+					Style style = face(tp.style(), tp.code());
 					String[] logical = tp.text().split("\n", -1);
 					for (int i = 0; i < logical.length; i++) {
 						if (i > 0) {
 							line.finish();
 							line = new LineBuilder(kind, depth, indent);
 						}
-						line = flowText(line, logical[i], tp.style(), kind, depth, indent);
+						line = flowText(line, logical[i], style, kind, depth, indent);
 					}
 				}
 			}
 		}
 		line.finish();
+	}
+
+	/**
+	 * The typeface for a piece of text. With LaTeX on: Computer Modern in the matching weight and slant (the style's
+	 * bold / italic flags are cleared, the font itself is bold or italic), and the typewriter face for code.
+	 */
+	private Style face(Style style, boolean code) {
+		if (!latex) {
+			return style;
+		}
+		boolean bold = style.isBold();
+		boolean italic = style.isItalic();
+		FontDescription typeface = code ? LATEX_MONO
+				: bold ? (italic ? LATEX_BOLD_ITALIC : LATEX_BOLD) : italic ? LATEX_ITALIC : LATEX;
+		return style.withFont(typeface).withBold(false).withItalic(false);
 	}
 
 	/** 把一段文字塞进当前行，放不下就按词换行，返回最后那一行（可能还没满）。 */
@@ -357,24 +489,28 @@ public final class BookLayout {
 				if (box != null) {
 					out.add(new BoxPiece(box));
 				} else {
-					out.add(new TextPiece("$" + span.text() + "$", base.withColor(ERROR)));
+					out.add(new TextPiece("$" + span.text() + "$", base.withColor(theme.error())));
 					String error = boxes.mathError(span.text(), false);
 					if (error != null) {
-						out.add(new TextPiece(" " + ERROR_MARK + error + " ", ERROR_NOTE));
+						out.add(new TextPiece(" " + ERROR_MARK + error + " ", errorNote()));
 					}
 				}
 				continue;
 			}
 			Style style = base;
+			boolean code = span.has(MdSpan.CODE);
 			if (span.has(MdSpan.BOLD)) style = style.withBold(true);
 			if (span.has(MdSpan.ITALIC)) style = style.withItalic(true);
 			if (span.has(MdSpan.STRIKE)) style = style.withStrikethrough(true);
-			if (span.has(MdSpan.CODE)) style = style.withColor(CODE);
-			if (span.link() != null) {
-				style = style.withColor(boxes.brokenLink(span.link()) ? BROKEN_LINK : LINK).withUnderlined(true)
+			if (code) style = style.withColor(theme.code());
+			if (com.memorypalace.core.markdown.Tags.isTagLink(span.link())) {
+				// #tags: link colour, no underline; a click searches for the tag
+				style = style.withColor(theme.link()).withInsertion(LINK_PREFIX + span.link());
+			} else if (span.link() != null) {
+				style = style.withColor(boxes.brokenLink(span.link()) ? theme.brokenLink() : theme.link()).withUnderlined(true)
 						.withInsertion(LINK_PREFIX + span.link());
 			}
-			out.add(new TextPiece(span.text(), style));
+			out.add(new TextPiece(span.text(), style, code));
 		}
 		return out;
 	}

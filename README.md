@@ -11,6 +11,8 @@
 
 English | [简体中文](README.zh-CN.md)
 
+> Based on [congyuemao/memory-palace](https://github.com/congyuemao/memory-palace) (MIT), with a Notion-style editor, pictures and PDFs, flashcards, tags, templates, PDF export, lecterns and themes added. Download the mod from [Releases](https://github.com/shauryajain07/memory-palace/releases).
+
 <p align="center">
   <a href="../../releases/latest">Download the latest release</a>
 </p>
@@ -30,12 +32,18 @@ Inspired by [ins@aamanda.li](https://www.instagram.com/aamanda.li)'s [meme reel]
 **Reading and writing**
 
 - **Note books**: ordinary written books, placed in vanilla chiseled bookshelves (six books per shelf) or on lecterns. Right-click to read; sneak + right-click to remove.
-- **A reader styled like vanilla books**: two facing pages, with independently adjustable page and font sizes.
+- **A reader styled like vanilla books**: two facing pages, with independently adjustable page and font sizes. The text is set in Computer Modern, the LaTeX typeface, with real bold, italic and typewriter faces, and so are the editor (typing in typewriter Computer Modern), page numbers and menus; switch back to Minecraft's font under Settings → Text font.
 - **Markdown**: headings, lists, task lists, block quotes, code blocks, tables, links, and local images (`![description](image.png)` and Obsidian's `![[image.png]]`).
 - **Links between notes**: supports Obsidian's `[[note name]]`, `[[folder/note name|display text]]`, and `[[note name#heading]]`, as well as `[text](folder/note.md)`. Click a link on the page to open the corresponding note. Lookup follows Obsidian's rules, preferring a note in the same folder when names match. Web links ask for confirmation before opening in your browser. `/palace backlinks <note>` lists all notes linking to the current note (encrypted note bodies cannot be read by the server and are excluded).
 - **LaTeX**: inline formulas with `$...$` and display formulas with `$$...$$`. Define your own macros with `\newcommand` or `\DeclareMathOperator` anywhere in a note; they apply to every formula in that note (see [Writing LaTeX](#writing-latex)).
 - **In-game editor**: edit on the left page with a live preview on the right. `Ctrl+S` saves, `Ctrl+Z` undoes, and `Ctrl+Y` (or `Ctrl+Shift+Z`) redoes. A conflict prompt appears if the file has changed externally. Type a LaTeX command such as `\frac` and press `Tab` to insert its template; a broken formula shows why it failed right in the preview.
+- **Notion-style writing**: type `/` in the editor for a menu of blocks (headings, lists, to-dos, quotes, code, math, tables, dividers, links, pictures, PDFs, today's date). `Enter` continues lists, `Tab` nests them, and `Ctrl+B` / `I` / `E` / `Shift+E` / `K` make the selection bold, italic, code, math or a link (see [Writing like Notion](#writing-like-notion)).
+- **Pictures and PDFs**: drag files onto the book while editing, paste a screenshot with `Ctrl+V`, or use `/image` and `/pdf`. Each PDF page becomes a picture in the note, and the PDF is kept beside it. Click any picture to see it full screen (see [Pictures and PDFs](#pictures-and-pdfs)).
+- **Restyle the books with a resource pack**: the built-in **Clean white** pack gives white pages and a sans-serif typeface; your own pack can set the page and every colour (see [Themes](#themes)).
+- **Study tools** (see [Study tools](#study-tools)): tick to-dos while reading; ☰ jumps to any heading; `#tags` with search by tag; `/template` for a lecture template per class; flashcards written as `Question :: Answer` and reviewed with spaced repetition; save any note as a PDF; and write in a book and quill on a lectern with the full editor.
 - **Export to a plain book**: `/palace export <note>` gives you an ordinary written book of the note that anyone can read, even without the mod. Formulas become Unicode (`x²`, `∫`, `½`).
+- **Ordinary books too**: a written book you wrote by hand with formulas or Markdown opens in the same reader (hold `Shift` while opening for the vanilla screen). The book and quill gets a **Preview** button.
+- **Build a library for your classes**: `/palace library ENGG1101 MATH1851 …` builds one room per class with bookshelves, a sign and an index, and stocks the shelves with that class's notes (see [Building a library](#building-a-library)).
 
 **Memory palace**
 
@@ -84,11 +92,17 @@ Change key bindings under "Options → Controls → Key Binds → Memory Palace"
 |---|---|
 | `/palace give <note or folder>` | Obtain note books; a folder gives a book for each note inside, up to 36 at a time |
 | `/palace export <note>` | Get a plain written book with the note's text, readable without the mod (LaTeX shown as Unicode, up to 100 pages; not for encrypted notes) |
+| `/palace library <class codes>` | Build a library in front of you with one room per class; asks before building (administrator) |
+| `/palace shelve <folder>` | Put a folder's notes that are not on a nearby shelf yet onto the chiseled bookshelf you are looking at |
+| `/palace index <folder>` | Get a book listing a folder's notes and where they are; click a title to open it |
 | `/palace new <path>` | Create a note and edit it in the game |
 | `/palace list [folder]` | List notes |
 | `/palace where <note>` | Find the bookshelves and lecterns holding a note |
 | `/palace open <note>` | Open a note directly |
 | `/palace backlinks <note>` | List notes linking to this note; click to open them |
+| `/palace review [folder]` | Review the flashcards that are due (all notes, or one folder) |
+| `/palace tags` | List the `#tags` in the notes you can read; click one to see its notes |
+| `/palace tag <tag>` | List the notes with that tag (or one nested under it); click to open |
 | `/palace share <player\|everyone> read\|edit <note>` | Share your note with others (read-only or editable) |
 | `/palace unshare <player\|everyone> <note>` | Stop sharing |
 | `/palace newsecret <path>` | Create an encrypted note |
@@ -139,6 +153,109 @@ For $x \in \R^n$: $\norm{x} \ge 0$, $\deriv{f}$, $\deriv[t]{g}$ and $\tr A$.
 Supported: `\newcommand`, `\renewcommand`, `\providecommand` (with up to 9 parameters and an optional first parameter) and `\DeclareMathOperator` / `\DeclareMathOperator*`. A formula that only contains definitions is not shown. Obsidian (MathJax) understands the common commands too, but applies a definition only to formulas after it, so if you also read your notes there, keep the definitions at the top.
 
 **Errors.** While editing, a formula that cannot be drawn stays red and the preview says why, for example `⚠ Unknown command \lam` or `⚠ Missing argument 2 in {…}`. The reader shows only the red source.
+
+## Writing like Notion
+
+In the editor, type `/` at the start of a line or after a space: a menu of blocks opens under the cursor. Keep typing to filter it (`/h2`, `/todo`, `/math`, `/table`), choose with `↑` `↓` and `Enter` (or click), or press `Esc` to type a plain slash. The English names work whatever the game language.
+
+| Menu entry | What it does |
+|---|---|
+| Heading 1–3, Bulleted list, Numbered list, To-do list, Quote | Turns the current line into that block: `My title /h1` becomes `# My title` |
+| Code block, Math block, Table, Divider | Puts the block on its own lines with the cursor inside |
+| Inline math, Link to note, Today's date | Types `$│$`, `[[` (the note-name suggestions open) or the date |
+| Image…, PDF… | Opens your computer's file window (see [Pictures and PDFs](#pictures-and-pdfs)) |
+
+More keys in the editor (`Cmd` instead of `Ctrl` on macOS):
+
+| Key | Action |
+|---|---|
+| `Enter` in a list, to-do or quote | Starts the next item (`- `, `2. `, `- [ ] `, `> `); on an empty item it ends the list |
+| `Tab` / `Shift+Tab` in a list item | Nests it under the item above / moves it back out. Elsewhere `Tab` still expands LaTeX snippets |
+| `Ctrl+B`, `Ctrl+I`, `Ctrl+E` | Bold, italic, `code` around the selection; pressed again on wrapped text, removes it |
+| `Ctrl+Shift+E` | Inline math `$…$` around the selection |
+| `Ctrl+K` | Turns the selection into a `[[link]]` to a note |
+| `Ctrl+V` with a picture on the clipboard | Adds the picture to the note (text on the clipboard pastes as usual) |
+
+## Pictures and PDFs
+
+While editing, drag pictures (PNG, JPG, GIF, BMP) or PDFs from your desktop onto the game window, paste a picture with `Ctrl+V`, or type `/image` or `/pdf` to pick files.
+
+- **Pictures** are shrunk to at most 1600 pixels, saved in an `attachments` folder beside the note and inserted as `![name](attachments/name.png)`. They show in the preview straight away.
+- **PDFs**: every page becomes a picture (up to 60 pages), under a line with the file name, the page count and an **open PDF** link. The PDF itself is kept in `attachments` too; the link opens it in your PDF viewer when the world is on your computer (on a server the file stays on the server).
+- **Full screen**: click any picture in a book. Scroll to zoom, drag to move, double-click to fit, `Esc` to go back.
+- **Limits**: pictures up to 6 MB, PDFs up to 30 MB. Files cannot go into encrypted notes, notes in a locked folder or the inbox, because they would sit unencrypted beside them. On a server you can add files only to notes you may edit; the server checks every file, chooses the file name and never overwrites a file.
+- Files are stored as soon as they are added; save the note to keep the references to them.
+- Pictures are linked as `attachments/…` next to the note. If you move a note to another folder outside the game, move its `attachments` folder with it.
+- Files added before you encrypt a note, or lock its folder, stay unencrypted beside it.
+
+## Themes
+
+Books can be restyled with a resource pack. The mod includes one: **Options → Resource Packs → Memory Palace: Clean white** gives white pages, dark grey text, red inline code and a sans-serif typeface (Computer Modern Sans), much like Notion. The editor's typing area uses typewriter Computer Modern with either look.
+
+To make your own, put `assets/memorypalace/book_theme.json` in a resource pack:
+
+```json
+{
+  "page": { "style": "flat", "paper": "#FFFFFF", "border": "#E3E2E0", "shadow": "#28000000", "spine": "#F1F1EF" },
+  "colors": {
+    "text": "#37352F", "heading": "#191919", "muted": "#787774",
+    "code": "#EB5757", "code_background": "#14878378", "math": "#37352F",
+    "link": "#2E7DD7", "broken_link": "#C4554D", "error": "#E03E3E",
+    "quote_bar": "#FF37352F", "rule": "#FFE9E9E7",
+    "menu_background": "#FFFFFFFF", "menu_border": "#FFDCDAD6", "menu_selected": "#FFEFEFED",
+    "menu_text": "#FF37352F", "menu_hint": "#FF9B9A97"
+  }
+}
+```
+
+- Colours are `#RRGGBB` or `#AARRGGBB`. Leave out anything you want to keep as it is.
+- For a textured page instead of a flat one: `"page": { "style": "texture", "texture": "mypack:textures/gui/page.png", "texture_size": [256, 256], "u": [20, 36, 148, 166], "v": [1, 28, 88, 148, 182] }`. `u` and `v` cut the picture into a 3×3 grid (spine edge, paper, outer edge; top, middle, bottom), and the middle is repeated to fill large pages. The mod's own `book_theme.json` holds the values for the vanilla book.
+- To change the typeface, replace `assets/memorypalace/font/latex.json` (and `latex_bold`, `latex_italic`, `latex_bold_italic`, `latex_mono`), as Clean white does.
+- A broken theme file is ignored, with a warning in the game log.
+
+## Study tools
+
+**To-dos.** Click a check box while reading to tick it; the note is saved at once (no editor needed). If the note was changed elsewhere in the meantime, nothing is overwritten and you are asked to open it again.
+
+**Outline.** The ☰ button under the book lists the note's headings with their page numbers; click one (or use `↑` `↓` `Enter`) to turn there.
+
+**Tags.** Write `#midterm`, `#exam/week3` anywhere in a note (like Obsidian: not in code or links, not `#123`, and the `#` of a `# Heading` is not a tag). Tags show in the link colour; click one to search for it. In the search (`J`), `#midterm` finds notes with that tag and `#exam` also finds `#exam/week3`. `/palace tags` lists all tags.
+
+**Templates.** Type `/template` (or `/lecture`) in the editor to insert a lecture template with the date and your class code filled in. To use your own, write notes in a `Templates` folder: `Templates/Lecture.md` for every note, or `Library/ENGG1101/Templates/Lab.md` for one class (the nearest template of a name wins). Placeholders: `{{date}}`, `{{time}}`, `{{title}}`, `{{class}}` (the code for notes under `Library/<CODE>/`), `{{folder}}`.
+
+**Flashcards.** Any line `Question :: Answer` is a card (Markdown and LaTeX work on both sides; a list marker in front is fine; code blocks and `` `inline code` `` are not cards). The reader shows **Review** on notes with cards, and `/palace review [folder]` reviews many notes at once. In the review, `Space` shows the answer, then `1` Again · `2` Hard · `3` Good · `4` Easy; each button shows when the card comes back (SM-2, as in Anki). Each player's schedule is kept in `.palace/cards/` in the vault. Encrypted notes are not included (the server cannot read them), and neither are templates.
+
+**PDF.** The **PDF** button under the book saves the note to `.minecraft/memory-palace-exports/` and opens it: A4 pages in Computer Modern, with formulas, tables, code, check boxes and clickable web links. Pictures are included when the world is on your computer; on a server they are named instead. Encrypted notes are not exported.
+
+**Book and quill on a lectern.** Put a book and quill on a lectern and right-click it to write in it with the Memory Palace editor (the `/` menu, live preview and all the keys); Save writes the book on the lectern, split into pages that fit a normal book, so it reads fine without the mod too. Sneak + right-click gives the vanilla screen (to take the book). You need to be allowed to build there, and in multiplayer the multiplayer switch must be on. If someone else changed the book meanwhile, you are asked before overwriting.
+
+## Building a library
+
+Stand on open ground, face the way the hall should run, and type your class codes:
+
+```
+/palace library ENGG1101 ENGG1330 ENGG1000 CCHU9078 MATH1851
+```
+
+The mod says how big the build is (5 rooms: 17 wide, 19 deep, 6 high) and how many existing blocks it would replace, then waits for you to click **[Build]** within 60 seconds. It builds exactly where you stood when you asked, facing the same way. It refuses when the area holds a chest, sign, shelf or any other block entity, reaches outside the world, or is not loaded. Replaced blocks are gone for good, so build on flat, empty ground.
+
+What you get:
+
+- A stone hall straight ahead with rooms on alternating sides, first left, then right.
+- In each room, 15 chiseled bookshelves (90 books), a lantern, and a lectern holding the room's **index**: click a title in it to open that note.
+- A waxed sign with the class code beside each door.
+- A folder per class, `Library/ENGG1101` and so on. A new, empty folder gets a short "start here" note.
+- The class's existing notes go onto its shelves, eye level first.
+
+Afterwards:
+
+- **New notes**: `/palace new Library/ENGG1101/Week 3`. Then look at a shelf in the room and type `/palace shelve Library/ENGG1101`: notes already on a nearby shelf are skipped.
+- **Fresh index**: the lectern's index is a snapshot. `/palace index Library/ENGG1101` gives an up-to-date one.
+- **Another class**: running `/palace library` again builds a *new* corridor, it does not extend the old one. Build a one-room corridor for the new class, or make a room by hand and use `/palace shelve`.
+
+## Ordinary books
+
+Any written book whose pages are plain text written by hand opens in Memory Palace's reader when it contains formulas or Markdown: `$\frac{1}{2}$`, `# Heading`, `- list`, `**bold**`. Hold `Shift` while opening to see the vanilla screen. Books with colours, links or other styling (made by commands, `/palace export`, `/palace index`) and books on lecterns keep the vanilla screen. The book and quill editor has a **Preview** button at the top right. Players without the mod see the plain text.
 
 ## Items and recipes
 
@@ -293,6 +410,8 @@ The mod JAR bundles the following libraries:
 - [fabric-permissions-api](https://github.com/lucko/fabric-permissions-api) (MIT)
 - [NightConfig](https://github.com/TheElectronWill/night-config) (LGPL-3.0)
 - [java-diff-utils](https://github.com/java-diff-utils/java-diff-utils) (Apache-2.0)
+- [Apache PDFBox](https://pdfbox.apache.org/) with FontBox and pdfbox-io (Apache-2.0)
+- [Apache Commons Logging](https://commons.apache.org/proper/commons-logging/) (Apache-2.0)
 
 See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for the complete notices.
 

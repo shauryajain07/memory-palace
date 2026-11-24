@@ -1,0 +1,41 @@
+{
+	"page": {
+		"style": "texture",
+		"texture": "minecraft:textures/gui/book.png",
+		"texture_size": [
+			256,
+			256
+		],
+		"u": [
+			20,
+			36,
+			148,
+			166
+		],
+		"v": [
+			1,
+			28,
+			88,
+			148,
+			182
+		]
+	},
+	"colors": {
+		"text": "#000000",
+		"heading": "#3B2410",
+		"muted": "#5A4A3A",
+		"code": "#1F4A2A",
+		"code_background": "#1A3A2A10",
+		"math": "#1A3A7A",
+		"link": "#1A3AA0",
+		"broken_link": "#9A3A2A",
+		"error": "#A02020",
+		"quote_bar": "#55704A2A",
+		"rule": "#66704A2A",
+		"menu_background": "#FFF4E8CC",
+		"menu_border": "#FF704A2A",
+		"menu_selected": "#40704A2A",
+		"menu_text": "#FF000000",
+		"menu_hint": "#FF5A4A3A"
+	}
+}

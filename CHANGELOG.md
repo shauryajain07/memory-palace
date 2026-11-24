@@ -1,17 +1,62 @@
 # Changelog
 [简体中文](CHANGELOG.zh-CN.md)
 
-## Unreleased
+## 1.1.0
+
+For Minecraft Java Edition 26.3 + Fabric Loader 0.20.1+ + Fabric API.
+
+**New: study tools**
+
+- **Tick to-dos while reading**: click a check box in the book; the note is saved right away, guarded against changes made elsewhere.
+- **Outline**: the ☰ button lists the note's headings and turns to the one you click.
+- **Tags**: `#tag` and `#nested/tag` in notes, drawn as links; click one to search for it, search for `#tag` with `J`, and list them with `/palace tags` and `/palace tag <tag>`.
+- **Templates**: `/template` inserts a lecture template, or your own from `Templates` folders (per class under `Library/<CODE>/Templates`), with `{{date}}`, `{{class}}`, `{{title}}` and more filled in.
+- **Flashcards**: lines written `Question :: Answer` become cards; review them from the reader's Review button or `/palace review [folder]`, with Again / Hard / Good / Easy and SM-2 scheduling saved per player.
+- **PDF export**: the reader's PDF button saves the note as an A4 PDF in Computer Modern, with formulas, tables, code, pictures (in worlds on your computer) and clickable web links.
+- **Book and quill on a lectern**: right-click to write in it with the full editor; the text is saved back as pages that fit a normal book.
+
+**New: writing like Notion**
+
+- **`/` menu**: in the editor, type `/` for a menu of blocks under the cursor (headings, bulleted, numbered and to-do lists, quotes, code and math blocks, tables, dividers, inline math, links to notes, today's date, pictures, PDFs). Typing filters it; line blocks turn the current line into that block (`My title /h1` → `# My title`).
+- **Editing keys**: `Enter` continues lists, to-dos and quotes and ends them on an empty item; `Tab` / `Shift+Tab` nest and un-nest list items; `Ctrl+B`, `Ctrl+I`, `Ctrl+E`, `Ctrl+Shift+E`, `Ctrl+K` wrap the selection in bold, italic, code, inline math or a `[[link]]` (and unwrap it again).
+
+**New: pictures and PDFs**
+
+- Drag pictures or PDFs onto the editor, paste a picture with `Ctrl+V`, or use `/image` and `/pdf` (the computer's file window). Files go into an `attachments` folder beside the note.
+- Each PDF page becomes a picture in the note (up to 60), with a title line and an **open PDF** link; the PDF is kept beside the note. Pages are drawn on your computer with Apache PDFBox; the server never opens a PDF.
+- Click any picture in a book to view it full screen, with zoom.
+- The server checks every upload: edit rights on every chunk, size limits (pictures 6 MB, PDFs 30 MB), real picture data (pictures are decoded and saved again), its own file names, no overwriting. Not for encrypted notes, locked folders or the inbox.
+
+- **The typing area is LaTeX too**: with the LaTeX typeface on, the editor's text box uses typewriter Computer Modern (the look of LaTeX source), and the header, page numbers and the `/` menu use the book's typeface instead of Minecraft's font.
+
+**New: themes**
+
+- The books' page and colours come from `assets/memorypalace/book_theme.json`, so a resource pack can restyle them. The built-in **Clean white** pack (Options → Resource Packs) gives white pages and Computer Modern Sans, Notion style.
 
 **New: easier LaTeX**
+
+- **The LaTeX look for the whole page**: book text is set in Computer Modern (regular, bold, italic, bold italic, and typewriter for code) instead of Minecraft's pixel font. Characters Computer Modern lacks (accented letters, Chinese) fall back to Minecraft's font. Settings → Text font switches back.
 
 - **Snippets**: in the editor, type `\frac`, `\sum`, `\sqrt`, `\pmat`, `\cases` and similar commands and press `Tab` to insert a template with the cursor inside; press `Tab` again to jump into the next empty `{}`. Macros the note defines itself are not touched.
 - **Macros per note**: `\newcommand`, `\renewcommand`, `\providecommand` (with parameters and an optional first parameter) and `\DeclareMathOperator` written in any formula apply to every formula of that note. A formula that only contains definitions is hidden.
 - **Formula errors explained**: the editor preview shows why a formula failed, for example "Unknown command \lam" or "Missing argument 2".
 - **`/palace export <note>`**: gives an ordinary written book with the note's text that players without the mod can read. LaTeX is shown as Unicode (`x²`, `∫₀¹`, `½`, `ℝⁿ`), Markdown as simple formatting, up to 100 pages. Encrypted notes are refused.
 
+**New: a library for your classes**
+
+- **`/palace library <class codes>`**: builds a hall with one room per class in front of you: 15 chiseled bookshelves, a lantern, a waxed sign with the code, and a lectern holding the room's index. It creates `Library/<CODE>` folders (with a "start here" note when empty) and stocks each room's shelves with that class's notes. It asks first, builds exactly where you stood, and refuses to build over chests, signs or other block entities, outside the world or in unloaded chunks. Administrators only.
+- **`/palace shelve <folder>`**: fills the chiseled bookshelf you are looking at with the folder's notes that are not on a nearby shelf yet. Same rules as placing books by hand (spawn protection, adventure mode).
+- **`/palace index <folder>`**: a written book listing a folder's notes and where they sit; click a title to open the note.
+
+**New: ordinary books**
+
+- A hand-written written book with formulas or Markdown opens in Memory Palace's reader; hold Shift for the vanilla screen. Styled books (made by commands, exports, indexes) and lecterns stay vanilla.
+- The book and quill editor gets a Preview button.
+
 **Fixes**
 
+- Pictures load as their pages come into view, a few at a time: a note with dozens of pictures (such as an imported PDF) no longer shows most of them as "not found" when the server is busy, and the reader no longer keeps every picture in memory at once.
+- After pressing `Tab` in the editor, reopening it (or resizing the window) no longer moves the focus to the Save button, which made typing do nothing.
 - A `\newcommand` in one note no longer leaks into every other note. JLaTeXMath keeps macros in one table for the whole game, so before this a macro from one note worked in all notes, depending on which was opened first. Definitions are now handled per note and never reach JLaTeXMath.
 
 ## 1.0.1

@@ -181,8 +181,16 @@ public final class NoteImages {
 	 * 免得一个高度压缩的"巨图"包在解码时把内存撑爆（OutOfMemoryError 是接不住的）。
 	 */
 	public static Optional<Raster> fromBytes(byte[] data) {
+		return fromBytes(data, MAX_RECEIVED_PIXELS, MAX_RECEIVED_SIDE);
+	}
+
+	/**
+	 * Same as fromBytes(data) with other limits: more than maxPixels → empty; a longer side than maxSide is read
+	 * subsampled down to about maxSide. Used for uploads, which may be bigger than what the server sends.
+	 */
+	public static Optional<Raster> fromBytes(byte[] data, long maxPixels, int maxSide) {
 		try (ImageInputStream in = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
-			BufferedImage image = in == null ? null : decode(in, MAX_RECEIVED_PIXELS, MAX_RECEIVED_SIDE);
+			BufferedImage image = in == null ? null : decode(in, maxPixels, maxSide);
 			return image == null ? Optional.empty() : Optional.of(toRaster(image));
 		} catch (Exception ignored) {
 			return Optional.empty();

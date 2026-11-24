@@ -1,0 +1,12 @@
+Computer Modern fonts (jlm_cmr10, jlm_cmbx10, jlm_cmti10, jlm_cmbxti10, jlm_cmtt10)
+Copied unchanged from JLaTeXMath 1.0.7 (org/scilab/forge/jlatexmath/fonts), which Memory Palace already bundles.
+Computer Modern was designed by Donald E. Knuth. License, as shipped with JLaTeXMath:
+
+Knuth License
+
+This software is copyright and you are explicitly granted a license which gives you, the "user" of the software, legal permission to copy, distribute and/or modify the software, so long as if you modify the software then it carry a different name from the original software.
+
+All the same, please check the specific details of the software's license before making modifications. 
+
+
+License

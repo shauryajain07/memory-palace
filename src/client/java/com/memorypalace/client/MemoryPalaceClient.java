@@ -44,11 +44,23 @@ public class MemoryPalaceClient implements ClientModInitializer {
 		});
 
 		NoteImageStore.register();
+		com.memorypalace.client.attach.Uploads.register();
+		LecternQuillScreen.register();
+		ReviewScreen.register();
+		com.memorypalace.client.book.BookTheme.register();
+		// "Clean white": a built-in resource pack that restyles the books (Options → Resource Packs)
+		net.fabricmc.loader.api.FabricLoader.getInstance().getModContainer("memorypalace").ifPresent(mod ->
+				net.fabricmc.fabric.api.resource.v1.ResourceLoader.registerBuiltinPack(
+						net.minecraft.resources.Identifier.fromNamespaceAndPath("memorypalace", "clean_white"), mod,
+						net.minecraft.network.chat.Component.translatable("pack.memorypalace.clean_white"),
+						net.fabricmc.fabric.api.resource.v1.pack.PackActivationType.NORMAL));
 		// 笔记正文（分块收齐、加密笔记先解锁）、钥匙圈、加密/解密/上锁都在这里
 		CryptoClient.register();
 		LookHud.register();
 		Navigator.register();
 		SearchScreen.register();
+		// ordinary written books with formulas / Markdown open in the note reader; book and quill gets a Preview button
+		VanillaBookReader.register();
 
 		// 保存结果交给发起保存的那一方；/palace new 之后直接打开编辑器
 		ClientPlayNetworking.registerGlobalReceiver(EditPayloads.SaveResult.TYPE, (payload, context) -> NoteSaver.onResult(payload));
@@ -57,6 +69,7 @@ public class MemoryPalaceClient implements ClientModInitializer {
 		// 笔记链接：阅读界面的断链和反向链接、编辑器里 [[ 的补全
 		ClientPlayNetworking.registerGlobalReceiver(com.memorypalace.mc.LinkPayloads.Info.TYPE, (payload, context) -> NoteScreen.onLinkInfo(payload));
 		ClientPlayNetworking.registerGlobalReceiver(com.memorypalace.mc.LinkPayloads.Suggestions.TYPE, (payload, context) -> EditorScreen.onSuggestions(payload));
+		ClientPlayNetworking.registerGlobalReceiver(com.memorypalace.mc.TemplatePayloads.Templates.TYPE, (payload, context) -> EditorScreen.onTemplates(payload));
 
 		// JLaTeXMath 第一次用要加载字体，比较慢：游戏启动时在后台先画一个公式"热身"
 		Thread.ofVirtual().name("memorypalace-math-warmup").start(() -> MathRenderer.render("x^2", false, 12, 0xFF000000));

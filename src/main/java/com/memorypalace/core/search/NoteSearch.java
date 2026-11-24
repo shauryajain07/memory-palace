@@ -21,7 +21,7 @@ public final class NoteSearch {
 	private NoteSearch() {}
 
 	// 正文 → 能搜的小写文字：Vault 对没变的笔记返回同一个正文对象，按对象相同判断还能不能用
-	private record Folded(String body, String searchable, String folded) {}
+	private record Folded(String body, String searchable, String folded, List<String> tags) {}
 
 	private static final java.util.Map<java.util.UUID, Folded> FOLDED = new java.util.concurrent.ConcurrentHashMap<>();
 	private static final int MAX_FOLDED = 20_000;
@@ -42,6 +42,8 @@ public final class NoteSearch {
 	 * - 正文用 vault.readBody 读；读失败（IOException 或 empty）就当正文为空，不抛异常
 	 * - 按分数从高到低，同分按 relativePath 字典序；最多返回 limit 条
 	 * - query 为 null、空或全是空白 → 空列表
+	 * - A term starting with "#" is a tag: it matches notes carrying that tag or one nested under it (#exam finds
+	 *   #exam/midterm), counts like a title match (+100), and never matches templates (notes in a Templates folder)
 	 */
 	public static List<Hit> search(Vault vault, String query, int limit) {
 		return search(vault, query, limit, note -> true);
@@ -68,6 +70,21 @@ public final class NoteSearch {
 			boolean matches = true;
 			int score = title.equals(normalized) ? 1000 : 0;
 			for (String term : terms) {
+				if (term.length() > 1 && term.startsWith("#")) {
+					Folded f = searchable(vault, note);
+					if (body == null) {
+						body = f.searchable();
+						foldedBody = f.folded();
+					}
+					if (com.memorypalace.core.markdown.Tags.inTemplates(note.relativePath())
+							|| !com.memorypalace.core.markdown.Tags.matches(f.tags(), term)) {
+						matches = false;
+						break;
+					}
+					score += 100;
+					metadataMatch = true;
+					continue;
+				}
 				if (title.contains(term)) {
 					score += 100;
 					metadataMatch = true;
@@ -98,7 +115,12 @@ public final class NoteSearch {
 				.thenComparing(hit -> hit.note().relativePath())).limit(limit).toList();
 	}
 
-	private static final Folded NOTHING = new Folded(null, "", "");
+	private static final Folded NOTHING = new Folded(null, "", "", List.of());
+
+	/** The note's #tags (lower case), from the cached text; none for encrypted notes. */
+	public static List<String> tagsOf(Vault vault, NoteSummary note) {
+		return searchable(vault, note).tags();
+	}
 
 	/** 这篇能拿来搜的正文和它的小写版本；加密笔记、读不了的为空。 */
 	private static Folded searchable(Vault vault, NoteSummary note) {
@@ -129,7 +151,8 @@ public final class NoteSearch {
 		} else {
 			searchable = body;
 		}
-		Folded fresh = new Folded(body, searchable, searchable.toLowerCase(Locale.ROOT));
+		Folded fresh = new Folded(body, searchable, searchable.toLowerCase(Locale.ROOT),
+				com.memorypalace.core.markdown.MarkdownParser.tags(searchable));
 		if (FOLDED.size() > MAX_FOLDED) {
 			FOLDED.clear();
 		}
